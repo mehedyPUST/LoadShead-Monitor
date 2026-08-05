@@ -7,7 +7,7 @@ export default function CompanyHeader() {
                 <div className="flex flex-col items-center justify-center gap-2">
                     {/* Logo */}
                     <img
-                        src="/public/logo.png"
+                        src="/logo.png"
                         alt="WZPDCL Logo"
                         className="h-14 w-auto md:h-16 object-contain brightness-0 invert"
                         onError={(e) => {
