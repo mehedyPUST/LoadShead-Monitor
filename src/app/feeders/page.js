@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/common/Layout';
 import FilterBar from '@/components/substation/FilterBar';
-import { api } from '@/utils/api';
+import { api, apiCall } from '@/utils/api'; // Import apiCall directly
 import { useAuth } from '@/context/AuthContext';
 
 // Helper to format date and time
@@ -54,8 +54,8 @@ export default function AllFeedersPage() {
             setIsLoading(true);
             setError(null);
 
-            let endpoint = '/feeders/all-stats';
-            let params = new URLSearchParams();
+            let url = '/feeders/all-stats';
+            const params = new URLSearchParams();
 
             if (range && (filterType === 'customDate' || filterType === 'customMonth')) {
                 params.append('startDate', range.startDate);
@@ -65,8 +65,9 @@ export default function AllFeedersPage() {
             }
 
             const query = params.toString();
-            const url = `${endpoint}${query ? '?' + query : ''}`;
-            const response = await api.apiCall(url);
+            const fullUrl = `${url}${query ? '?' + query : ''}`;
+            // Use apiCall directly (imported)
+            const response = await apiCall(fullUrl);
 
             if (response.success) {
                 setFeeders(response.data);
@@ -106,20 +107,23 @@ export default function AllFeedersPage() {
         }
     };
 
+    // Helper for filter label (simplified)
+    const getFilterLabel = () => {
+        switch (filter) {
+            case 'today': return 'Today';
+            case 'yesterday': return 'Yesterday';
+            case 'last7days': return 'Last 7 Days';
+            case 'last15days': return 'Last 15 Days';
+            case 'thisMonth': return 'This Month';
+            case 'customDate': return 'Custom Date';
+            case 'customMonth': return customMonthLabel || 'Custom Month';
+            default: return '';
+        }
+    };
+
     useEffect(() => {
         if (user) fetchData();
     }, [user]);
-
-    // Helpers for filter label – reuse from substation page
-    const getFilterLabel = () => {
-        // ... (you can copy from substation page)
-        return 'All Feeders';
-    };
-
-    const getPeriodLabel = () => {
-        // ... (you can copy from substation page)
-        return '';
-    };
 
     if (loading || !user) {
         return (
@@ -151,7 +155,6 @@ export default function AllFeedersPage() {
         );
     }
 
-    // Calculate total duration across all feeders
     const totalDuration = feeders.reduce((sum, f) => sum + f.totalDuration, 0);
     const totalEvents = feeders.reduce((sum, f) => sum + f.eventCount, 0);
     const activeFeeders = feeders.filter(f => f.eventCount > 0).length;
@@ -234,9 +237,7 @@ export default function AllFeedersPage() {
                                                 backgroundColor: color,
                                             }}
                                             title={`${formatDateTime(event.start)} → ${formatDateTime(event.end)} (${event.duration}m)`}
-                                        >
-                                            {/* Tooltip via title attribute */}
-                                        </div>
+                                        />
                                     );
                                 })}
                             </div>
@@ -248,7 +249,7 @@ export default function AllFeedersPage() {
                             </div>
                         )}
 
-                        {/* Event List (optional toggle) – we can add a small expandable list */}
+                        {/* Event List (optional) */}
                         {feeder.events.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1">
                                 {feeder.events.slice(0, 3).map((event, idx) => (
