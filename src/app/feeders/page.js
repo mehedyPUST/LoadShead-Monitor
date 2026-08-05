@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/common/Layout';
 import FilterBar from '@/components/substation/FilterBar';
-import { api, apiCall } from '@/utils/api'; // Import apiCall directly
+import { api, apiCall } from '@/utils/api'; // ✅ Import apiCall directly
 import { useAuth } from '@/context/AuthContext';
 
 // Helper to format date and time
@@ -65,9 +65,10 @@ export default function AllFeedersPage() {
             }
 
             const query = params.toString();
-            const fullUrl = `${url}${query ? '?' + query : ''}`;
-            // Use apiCall directly (imported)
-            const response = await apiCall(fullUrl);
+            if (query) url += '?' + query;
+
+            // ✅ Use apiCall directly (not api.apiCall)
+            const response = await apiCall(url);
 
             if (response.success) {
                 setFeeders(response.data);
@@ -107,23 +108,40 @@ export default function AllFeedersPage() {
         }
     };
 
-    // Helper for filter label (simplified)
-    const getFilterLabel = () => {
-        switch (filter) {
-            case 'today': return 'Today';
-            case 'yesterday': return 'Yesterday';
-            case 'last7days': return 'Last 7 Days';
-            case 'last15days': return 'Last 15 Days';
-            case 'thisMonth': return 'This Month';
-            case 'customDate': return 'Custom Date';
-            case 'customMonth': return customMonthLabel || 'Custom Month';
-            default: return '';
-        }
-    };
-
     useEffect(() => {
         if (user) fetchData();
     }, [user]);
+
+    // Compute filter label
+    const getFilterLabel = () => {
+        const today = new Date();
+        const formatDate = (date) => {
+            return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+        };
+        const formatDaysAgo = (days) => {
+            const d = new Date();
+            d.setDate(d.getDate() - days);
+            return formatDate(d);
+        };
+
+        switch (filter) {
+            case 'today': return `Today (${formatDate(today)})`;
+            case 'yesterday': return `Yesterday (${formatDaysAgo(1)})`;
+            case 'last7days': return `Last 7 Days (${formatDaysAgo(6)} – ${formatDate(today)})`;
+            case 'last15days': return `Last 15 Days (${formatDaysAgo(14)} – ${formatDate(today)})`;
+            case 'thisMonth': return `This Month (${today.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })})`;
+            case 'customDate': {
+                if (dateRange) {
+                    const start = new Date(dateRange.startDate);
+                    const end = new Date(dateRange.endDate);
+                    return `Custom Date: ${formatDate(start)} – ${formatDate(end)}`;
+                }
+                return 'Custom Date';
+            }
+            case 'customMonth': return customMonthLabel ? `Custom Month: ${customMonthLabel}` : 'Custom Month';
+            default: return 'All Feeders';
+        }
+    };
 
     if (loading || !user) {
         return (
@@ -155,9 +173,13 @@ export default function AllFeedersPage() {
         );
     }
 
+    // Calculate total stats
     const totalDuration = feeders.reduce((sum, f) => sum + f.totalDuration, 0);
     const totalEvents = feeders.reduce((sum, f) => sum + f.eventCount, 0);
     const activeFeeders = feeders.filter(f => f.eventCount > 0).length;
+
+    // Find the maximum total duration among all feeders (to scale bars)
+    const maxDuration = Math.max(1, ...feeders.map(f => f.totalDuration));
 
     return (
         <Layout>
@@ -200,76 +222,87 @@ export default function AllFeedersPage() {
                 </div>
             )}
 
-            {/* Feeder List with Horizontal Bars */}
+            {/* Feeder List with Horizontal Bars scaled to maxDuration */}
             <div className="space-y-4">
-                {feeders.map((feeder) => (
-                    <div key={feeder.feederId} className="card p-4">
-                        <div className="flex justify-between items-start mb-2">
-                            <div>
-                                <h3 className="font-semibold text-gray-800">
-                                    {feeder.feederName}
-                                    <span className="text-sm font-normal text-gray-500 ml-2">
-                                        ({feeder.substationName})
-                                    </span>
-                                </h3>
-                                <p className="text-xs text-gray-400">
-                                    {feeder.eventCount} events · {formatDuration(feeder.totalDuration)} total
-                                </p>
-                            </div>
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                                {feeder.eventCount} events
-                            </span>
-                        </div>
+                {feeders.map((feeder) => {
+                    // Scale bar relative to maxDuration (not 100% per feeder)
+                    const barWidth = (feeder.totalDuration / maxDuration) * 100;
+                    // But we don't want empty bars to be zero width, so we set a minimum of 2%
+                    const displayWidth = Math.max(barWidth, 0.1);
 
-                        {/* Horizontal Bar with Segments */}
-                        {feeder.totalDuration > 0 && (
-                            <div className="relative w-full h-8 bg-gray-200 rounded-full overflow-hidden">
-                                {feeder.events.map((event, idx) => {
-                                    const segmentWidth = (event.duration / feeder.totalDuration) * 100;
-                                    const color = colors[idx % colors.length];
-                                    return (
-                                        <div
+                    return (
+                        <div key={feeder.feederId} className="card p-4">
+                            <div className="flex justify-between items-start mb-2">
+                                <div>
+                                    <h3 className="font-semibold text-gray-800">
+                                        {feeder.feederName}
+                                        <span className="text-sm font-normal text-gray-500 ml-2">
+                                            ({feeder.substationName})
+                                        </span>
+                                    </h3>
+                                    <p className="text-xs text-gray-400">
+                                        {feeder.eventCount} events · {formatDuration(feeder.totalDuration)} total
+                                    </p>
+                                </div>
+                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                                    {feeder.eventCount} events
+                                </span>
+                            </div>
+
+                            {/* Horizontal Bar with Segments – scaled to maxDuration */}
+                            {feeder.totalDuration > 0 ? (
+                                <div className="relative w-full h-8 bg-gray-200 rounded-full overflow-hidden">
+                                    {feeder.events.map((event, idx) => {
+                                        // Each segment width is (event.duration / maxDuration) * 100
+                                        const segmentWidth = (event.duration / maxDuration) * 100;
+                                        // Accumulate left offset from previous segments (relative to maxDuration)
+                                        const leftOffset = feeder.events
+                                            .slice(0, idx)
+                                            .reduce((sum, e) => sum + (e.duration / maxDuration) * 100, 0);
+                                        const color = colors[idx % colors.length];
+                                        return (
+                                            <div
+                                                key={event.id}
+                                                className="absolute top-0 h-full transition-all hover:opacity-80"
+                                                style={{
+                                                    left: `${leftOffset}%`,
+                                                    width: `${Math.max(segmentWidth, 0.5)}%`,
+                                                    backgroundColor: color,
+                                                    minWidth: '2px', // minimal visible segment
+                                                }}
+                                                title={`${formatDateTime(event.start)} → ${formatDateTime(event.end)} (${event.duration}m)`}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="w-full h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs text-gray-400">
+                                    No loadshed events
+                                </div>
+                            )}
+
+                            {/* Event list (first 3) */}
+                            {feeder.events.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                    {feeder.events.slice(0, 3).map((event, idx) => (
+                                        <span
                                             key={event.id}
-                                            className="absolute top-0 h-full transition-all hover:opacity-80"
-                                            style={{
-                                                left: `${feeder.events.slice(0, idx).reduce((sum, e) => sum + (e.duration / feeder.totalDuration) * 100, 0)}%`,
-                                                width: `${segmentWidth}%`,
-                                                backgroundColor: color,
-                                            }}
-                                            title={`${formatDateTime(event.start)} → ${formatDateTime(event.end)} (${event.duration}m)`}
-                                        />
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        {feeder.totalDuration === 0 && (
-                            <div className="w-full h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs text-gray-400">
-                                No loadshed events
-                            </div>
-                        )}
-
-                        {/* Event List (optional) */}
-                        {feeder.events.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                                {feeder.events.slice(0, 3).map((event, idx) => (
-                                    <span
-                                        key={event.id}
-                                        className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full text-gray-600"
-                                        style={{ borderLeft: `3px solid ${colors[idx % colors.length]}` }}
-                                    >
-                                        {formatDateTime(event.start)} – {event.duration}m
-                                    </span>
-                                ))}
-                                {feeder.events.length > 3 && (
-                                    <span className="text-[10px] text-gray-400">
-                                        +{feeder.events.length - 3} more
-                                    </span>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                ))}
+                                            className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full text-gray-600"
+                                            style={{ borderLeft: `3px solid ${colors[idx % colors.length]}` }}
+                                        >
+                                            {formatDateTime(event.start)} – {event.duration}m
+                                        </span>
+                                    ))}
+                                    {feeder.events.length > 3 && (
+                                        <span className="text-[10px] text-gray-400">
+                                            +{feeder.events.length - 3} more
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </Layout>
     );
