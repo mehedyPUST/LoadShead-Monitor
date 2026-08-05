@@ -3,10 +3,20 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import AddLoadshedModal from '@/components/modals/AddLoadshedModal';
-import EditLoadshedModal from '@/components/modals/EditLoadshedModal';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/utils/api';
+
+// Lazy load modals
+const AddLoadshedModal = dynamic(
+    () => import('@/components/modals/AddLoadshedModal'),
+    { ssr: false }
+);
+
+const EditLoadshedModal = dynamic(
+    () => import('@/components/modals/EditLoadshedModal'),
+    { ssr: false }
+);
 
 export default function FeederCard({
     feeder,
@@ -78,7 +88,7 @@ export default function FeederCard({
         }
     };
 
-    // ✅ NEW: Format event date and time together
+    // Format event date & time (DD/MM HH:MM)
     const formatEventDateTime = (date) => {
         const d = new Date(date);
         const day = String(d.getDate()).padStart(2, '0');
@@ -147,7 +157,7 @@ export default function FeederCard({
                         </div>
                     </div>
 
-                    {/* Events List – WITH DATE AND TIME */}
+                    {/* Events List */}
                     {records.length > 0 ? (
                         <div className="mt-3 space-y-1.5">
                             {records.map((record, idx) => (
@@ -156,7 +166,6 @@ export default function FeederCard({
                                     className="text-sm bg-gray-50 p-2 rounded flex justify-between items-center hover:bg-gray-100 transition group"
                                 >
                                     <span className="truncate">
-                                        {/* ✅ NOW SHOWS DD/MM HH:MM → HH:MM */}
                                         Event #{idx + 1}: {formatEventDateTime(record.startTime)} → {formatEventDateTime(record.endTime)}
                                         {record.operator?.name && (
                                             <span className="text-gray-500 ml-2">by {record.operator.name}</span>
@@ -197,27 +206,31 @@ export default function FeederCard({
                 </div>
             </motion.div>
 
-            {/* Add Loadshed Modal */}
-            <AddLoadshedModal
-                isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
-                substation={substation}
-                feeder={feeder}
-                onSuccess={handleRecordAdded}
-            />
+            {/* Add Modal */}
+            {isAddModalOpen && (
+                <AddLoadshedModal
+                    isOpen={isAddModalOpen}
+                    onClose={() => setIsAddModalOpen(false)}
+                    substation={substation}
+                    feeder={feeder}
+                    onSuccess={handleRecordAdded}
+                />
+            )}
 
-            {/* Edit Loadshed Modal */}
-            <EditLoadshedModal
-                isOpen={isEditModalOpen}
-                onClose={() => {
-                    setIsEditModalOpen(false);
-                    setSelectedRecord(null);
-                }}
-                record={selectedRecord}
-                substation={substation}
-                feeder={feeder}
-                onSuccess={handleRecordUpdated}
-            />
+            {/* Edit Modal */}
+            {isEditModalOpen && selectedRecord && (
+                <EditLoadshedModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => {
+                        setIsEditModalOpen(false);
+                        setSelectedRecord(null);
+                    }}
+                    record={selectedRecord}
+                    substation={substation}
+                    feeder={feeder}
+                    onSuccess={handleRecordUpdated}
+                />
+            )}
         </>
     );
 }

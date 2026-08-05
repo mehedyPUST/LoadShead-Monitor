@@ -1,5 +1,6 @@
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
+import { Analytics } from '@vercel/analytics/react';
 
 export const metadata = {
   title: 'LoadShed Monitor',
@@ -12,6 +13,7 @@ export default function RootLayout({ children }) {
       <body className="bg-gray-50 min-h-screen">
         <AuthProvider>
           {children}
+          <Analytics /> {/* ← NEW */}
         </AuthProvider>
       </body>
     </html>

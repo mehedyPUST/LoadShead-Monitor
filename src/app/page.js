@@ -2,11 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import Layout from '@/components/common/Layout';
 import StatsCards from '@/components/dashboard/StatsCards';
 import SubstationCard from '@/components/dashboard/SubstationCard';
 import { api } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
+
+// Lazy load the heavy chart
+const VerticalBarChart = dynamic(
+  () => import('@/components/substation/VerticalBarChart'),
+  {
+    ssr: false,
+    loading: () => <div className="h-80 bg-gray-100 rounded-xl animate-pulse" />
+  }
+);
 
 export default function Dashboard() {
   const router = useRouter();
@@ -49,7 +59,7 @@ export default function Dashboard() {
                 totalDuration += recordsRes.data.reduce((sum, r) => sum + r.duration, 0);
               }
             } catch (e) {
-              // Skip if no records
+              // Skip
             }
           }
 
