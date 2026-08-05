@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
@@ -26,19 +25,28 @@ export default function Navbar() {
     return (
         <nav className="bg-gradient-to-r from-emerald-700 to-emerald-600 text-white shadow-lg sticky top-0 z-50">
             <div className="container mx-auto px-4 py-3">
+                {/* Top Row: Logo + Company Info – Centered */}
                 <div className="flex flex-col items-center justify-center gap-2 mb-3 pb-3 border-b border-white/10">
                     <div className="flex items-center gap-4">
+                        {/* Logo – using external URL with fallback */}
                         <div className="flex-shrink-0">
-                            <Image
+                            <img
                                 src="https://i.ibb.co.com/VYBv8n64/Untitled-1.png"
                                 alt="WZPDCL Logo"
-                                width={64}
-                                height={64}
-                                className="h-14 w-auto md:h-16 object-contain brightness-0 invert"
-                                priority
-                                unoptimized
+                                className="h-14 w-auto md:h-16 object-contain"
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    // If the external URL fails, try local fallback
+                                    e.target.src = '/logo.png';
+                                    // If local also fails, hide
+                                    e.target.onerror = () => {
+                                        e.target.style.display = 'none';
+                                    };
+                                }}
                             />
                         </div>
+
+                        {/* Company Info */}
                         <div className="text-center">
                             <h1 className="text-base md:text-lg lg:text-xl font-bold tracking-wide">
                                 West Zone Power Distribution Company Limited
@@ -53,6 +61,7 @@ export default function Navbar() {
                     </div>
                 </div>
 
+                {/* Bottom Row: Navigation */}
                 <div className="flex justify-between items-center">
                     <Link href="/" className="text-base md:text-lg font-bold hover:text-emerald-200 transition">
                         LoadShed Monitor
