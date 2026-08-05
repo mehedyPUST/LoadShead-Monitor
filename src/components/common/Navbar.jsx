@@ -23,84 +23,48 @@ export default function Navbar() {
     };
 
     return (
-        <nav className="bg-gradient-to-r from-emerald-700 to-emerald-600 text-white shadow-lg sticky top-0 z-50">
-            <div className="container mx-auto px-4 py-3">
-                {/* Top Row: Logo + Company Info – Centered */}
-                <div className="flex flex-col items-center justify-center gap-2 mb-3 pb-3 border-b border-white/10">
-                    <div className="flex items-center gap-4">
-                        {/* Logo – using external URL with fallback */}
-                        <div className="flex-shrink-0">
-                            <img
-                                src="https://i.ibb.co.com/VYBv8n64/Untitled-1.png"
-                                alt="WZPDCL Logo"
-                                className="h-14 w-auto md:h-16 object-contain"
-                                onError={(e) => {
-                                    e.target.onerror = null;
-                                    // If the external URL fails, try local fallback
-                                    e.target.src = '/logo.png';
-                                    // If local also fails, hide
-                                    e.target.onerror = () => {
-                                        e.target.style.display = 'none';
-                                    };
-                                }}
-                            />
-                        </div>
+        <nav className="bg-white shadow-md sticky top-0 z-50 border-b border-gray-200">
+            <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+                <Link href="/" className="text-lg md:text-xl font-bold text-emerald-700 hover:text-emerald-800 transition">
+                    LoadShed Monitor
+                </Link>
 
-                        {/* Company Info */}
-                        <div className="text-center">
-                            <h1 className="text-base md:text-lg lg:text-xl font-bold tracking-wide">
-                                West Zone Power Distribution Company Limited
-                            </h1>
-                            <p className="text-xs md:text-sm opacity-90">
-                                Sales and Distribution Division-1, Kushtia
-                            </p>
-                            <p className="text-[10px] md:text-xs opacity-75">
-                                An Enterprise of Bangladesh Power Development Board
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Bottom Row: Navigation */}
-                <div className="flex justify-between items-center">
-                    <Link href="/" className="text-base md:text-lg font-bold hover:text-emerald-200 transition">
-                        LoadShed Monitor
-                    </Link>
-
-                    <div className="flex items-center gap-2">
-                        {user ? (
-                            <>
-                                {user.role === 'admin' && (
-                                    <>
-                                        <Link
-                                            href="/admin"
-                                            className="text-xs md:text-sm hover:text-emerald-200 transition"
-                                        >
-                                            Admin
-                                        </Link>
-                                        <span className="text-white/30">|</span>
-                                    </>
-                                )}
-                                <span className="text-xs md:text-sm hidden sm:inline opacity-90">
-                                    {user.name} ({getRoleDisplay(user.role)})
-                                </span>
-                                <span className="text-white/30 hidden sm:inline">|</span>
-                                <button
-                                    onClick={handleLogout}
-                                    className="text-xs md:text-sm hover:text-emerald-200 transition"
-                                >
-                                    Logout
-                                </button>
-                            </>
-                        ) : (
-                            <Link
-                                href="/login"
-                                className="text-xs md:text-sm hover:text-emerald-200 transition"
-                            >
-                                Login
+                <div className="flex items-center gap-4">
+                    {/* Navigation Links */}
+                    {user && (
+                        <>
+                            <Link href="/" className="text-sm text-gray-700 hover:text-emerald-600 transition">
+                                Dashboard
                             </Link>
-                        )}
-                    </div>
+                            <Link href="/feeders" className="text-sm text-gray-700 hover:text-emerald-600 transition">
+                                Feeders
+                            </Link>
+                            {user.role === 'admin' && (
+                                <Link href="/admin" className="text-sm text-gray-700 hover:text-emerald-600 transition">
+                                    Admin
+                                </Link>
+                            )}
+                        </>
+                    )}
+
+                    {/* User Info & Logout */}
+                    {user ? (
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm text-gray-600 hidden sm:inline">
+                                {user.name} ({getRoleDisplay(user.role)})
+                            </span>
+                            <button
+                                onClick={handleLogout}
+                                className="text-sm text-gray-600 hover:text-emerald-600 transition"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    ) : (
+                        <Link href="/login" className="text-sm text-gray-600 hover:text-emerald-600 transition">
+                            Login
+                        </Link>
+                    )}
                 </div>
             </div>
         </nav>
