@@ -4,7 +4,7 @@ export default function CompanyHeader() {
     return (
         <div className="bg-gradient-to-r from-emerald-700 to-emerald-600 text-white shadow-md">
             <div className="container mx-auto px-4 py-4">
-                <div className="flex items-center justify-center md:justify-start gap-4">
+                <div className="flex flex-col items-center justify-center gap-2">
                     {/* Logo */}
                     <img
                         src="/logo.png"
@@ -15,8 +15,8 @@ export default function CompanyHeader() {
                             e.target.style.display = 'none';
                         }}
                     />
-                    {/* Company Info */}
-                    <div className="text-center md:text-left">
+                    {/* Company Info - Centered */}
+                    <div className="text-center">
                         <h1 className="text-base md:text-lg lg:text-xl font-bold tracking-wide">
                             West Zone Power Distribution Company Limited
                         </h1>
