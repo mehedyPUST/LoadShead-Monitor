@@ -9,7 +9,7 @@ import SubstationCard from '@/components/dashboard/SubstationCard';
 import { api } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 
-// Lazy load the heavy chart
+// Lazy load heavy chart (optional)
 const VerticalBarChart = dynamic(
   () => import('@/components/substation/VerticalBarChart'),
   {
@@ -59,7 +59,7 @@ export default function Dashboard() {
                 totalDuration += recordsRes.data.reduce((sum, r) => sum + r.duration, 0);
               }
             } catch (e) {
-              // Skip
+              // Skip if no records
             }
           }
 
@@ -123,6 +123,17 @@ export default function Dashboard() {
       </div>
 
       <StatsCards stats={stats} />
+
+      {/* ===== NEW: All Feeders Button ===== */}
+      <div className="mb-6">
+        <button
+          onClick={() => router.push('/feeders')}
+          className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-emerald-700 transition shadow-sm flex items-center gap-2"
+        >
+          <span>⚡</span> View All Feeders
+        </button>
+        <p className="text-xs text-gray-400 mt-1">See all feeders across all substations with detailed event bars</p>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {substations.map((ss, index) => (

@@ -1,5 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
+// ===== CORE API CALL =====
 const apiCall = async (endpoint, options = {}) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
@@ -44,6 +45,10 @@ const apiCall = async (endpoint, options = {}) => {
     }
 };
 
+// ===== EXPOSE apiCall FOR OTHER COMPONENTS =====
+export { apiCall };
+
+// ===== API OBJECT =====
 export const api = {
     // Auth
     login: async (username, password) => {
@@ -108,6 +113,14 @@ export const api = {
         return apiCall('/feeders');
     },
 
+    getAllFeedersStats: async (view = 'today', startDate = null, endDate = null) => {
+        let url = `/feeders/all-stats?view=${view}`;
+        if (startDate && endDate) {
+            url = `/feeders/all-stats?startDate=${startDate}&endDate=${endDate}`;
+        }
+        return apiCall(url);
+    },
+
     getFeedersBySubstation: async (substationId) => {
         return apiCall(`/feeders/substation/${substationId}`);
     },
@@ -151,7 +164,6 @@ export const api = {
         return apiCall(`/records/substation/${id}?${params.toString()}`);
     },
 
-    // ✅ NEW: Get records for a specific feeder with filter
     getRecordsByFeeder: async (feederId, view = 'today') => {
         return apiCall(`/records?feederId=${feederId}&view=${view}`);
     },
