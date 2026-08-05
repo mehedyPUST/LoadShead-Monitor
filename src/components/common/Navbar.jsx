@@ -23,48 +23,51 @@ export default function Navbar() {
     };
 
     return (
-        <nav className="bg-white shadow-md sticky top-0 z-50 border-b border-gray-200">
-            <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-                <Link href="/" className="text-lg md:text-xl font-bold text-emerald-700 hover:text-emerald-800 transition">
-                    LoadShed Monitor
-                </Link>
+        <nav className="bg-gradient-to-r from-emerald-700 to-emerald-600 text-white shadow-lg sticky top-0 z-50">
+            <div className="container mx-auto px-4 py-3">
+                <div className="flex justify-between items-center">
+                    {/* App Name */}
+                    <Link href="/" className="text-base md:text-lg font-bold hover:text-emerald-200 transition">
+                        LoadShed Monitor
+                    </Link>
 
-                <div className="flex items-center gap-4">
-                    {/* Navigation Links */}
-                    {user && (
-                        <>
-                            <Link href="/" className="text-sm text-gray-700 hover:text-emerald-600 transition">
-                                Dashboard
-                            </Link>
-                            <Link href="/feeders" className="text-sm text-gray-700 hover:text-emerald-600 transition">
-                                Feeders
-                            </Link>
-                            {user.role === 'admin' && (
-                                <Link href="/admin" className="text-sm text-gray-700 hover:text-emerald-600 transition">
-                                    Admin
+                    {/* Navigation & User */}
+                    <div className="flex items-center gap-4">
+                        {user && (
+                            <>
+                                <Link href="/" className="text-sm hover:text-emerald-200 transition">
+                                    Dashboard
                                 </Link>
-                            )}
-                        </>
-                    )}
+                                <Link href="/feeders" className="text-sm hover:text-emerald-200 transition">
+                                    Feeders
+                                </Link>
+                                {user.role === 'admin' && (
+                                    <Link href="/admin" className="text-sm hover:text-emerald-200 transition">
+                                        Admin
+                                    </Link>
+                                )}
+                                <span className="text-white/30">|</span>
+                            </>
+                        )}
 
-                    {/* User Info & Logout */}
-                    {user ? (
-                        <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-600 hidden sm:inline">
-                                {user.name} ({getRoleDisplay(user.role)})
-                            </span>
-                            <button
-                                onClick={handleLogout}
-                                className="text-sm text-gray-600 hover:text-emerald-600 transition"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    ) : (
-                        <Link href="/login" className="text-sm text-gray-600 hover:text-emerald-600 transition">
-                            Login
-                        </Link>
-                    )}
+                        {user ? (
+                            <div className="flex items-center gap-3">
+                                <span className="text-sm hidden sm:inline opacity-90">
+                                    {user.name} ({getRoleDisplay(user.role)})
+                                </span>
+                                <button
+                                    onClick={handleLogout}
+                                    className="text-sm hover:text-emerald-200 transition"
+                                >
+                                    Logout
+                                </button>
+                            </div>
+                        ) : (
+                            <Link href="/login" className="text-sm hover:text-emerald-200 transition">
+                                Login
+                            </Link>
+                        )}
+                    </div>
                 </div>
             </div>
         </nav>
