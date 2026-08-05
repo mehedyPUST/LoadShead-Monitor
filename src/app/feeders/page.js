@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/common/Layout';
 import FilterBar from '@/components/substation/FilterBar';
-import { api, apiCall } from '@/utils/api'; // ✅ Import apiCall directly
+import { api, apiCall } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 
-// Helper to format date and time
+// Helper: format date/time for tooltips
 const formatDateTime = (date) => {
     const d = new Date(date);
     const day = String(d.getDate()).padStart(2, '0');
@@ -16,15 +16,15 @@ const formatDateTime = (date) => {
     return `${day}/${month} ${time}`;
 };
 
-// Helper to format duration
+// Helper: ALWAYS show minutes, plus hours if >= 60
 const formatDuration = (minutes) => {
-    if (minutes < 60) return `${minutes}m`;
+    if (minutes < 60) return `${minutes} mins`;
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    return mins > 0 ? `${hours}h ${mins}m (${minutes} mins)` : `${hours}h (${minutes} mins)`;
 };
 
-// Color palette for event segments
+// Colour palette for event segments
 const colors = [
     '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6',
     '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16',
@@ -67,8 +67,7 @@ export default function AllFeedersPage() {
             const query = params.toString();
             if (query) url += '?' + query;
 
-            // ✅ Use apiCall directly (not api.apiCall)
-            const response = await apiCall(url);
+            const response = await apiCall(url);  // ← use apiCall directly
 
             if (response.success) {
                 setFeeders(response.data);
@@ -83,7 +82,7 @@ export default function AllFeedersPage() {
         }
     };
 
-    // Handle filter change
+    // Handle filter change (unchanged)
     const handleFilterChange = (filterData) => {
         const { type, startDate, endDate, month, year } = filterData;
         setFilter(type);
@@ -112,7 +111,7 @@ export default function AllFeedersPage() {
         if (user) fetchData();
     }, [user]);
 
-    // Compute filter label
+    // Compute filter label (reuse from substation page)
     const getFilterLabel = () => {
         const today = new Date();
         const formatDate = (date) => {
@@ -173,12 +172,12 @@ export default function AllFeedersPage() {
         );
     }
 
-    // Calculate total stats
+    // Total stats
     const totalDuration = feeders.reduce((sum, f) => sum + f.totalDuration, 0);
     const totalEvents = feeders.reduce((sum, f) => sum + f.eventCount, 0);
     const activeFeeders = feeders.filter(f => f.eventCount > 0).length;
 
-    // Find the maximum total duration among all feeders (to scale bars)
+    // Maximum duration among all feeders (to scale bars)
     const maxDuration = Math.max(1, ...feeders.map(f => f.totalDuration));
 
     return (
@@ -188,7 +187,6 @@ export default function AllFeedersPage() {
                 <p className="text-sm text-gray-500">Loadshed events across all substations</p>
             </div>
 
-            {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="card p-4 border-l-4 border-blue-500">
                     <p className="text-sm text-gray-500">Total Feeders</p>
@@ -208,7 +206,6 @@ export default function AllFeedersPage() {
                 </div>
             </div>
 
-            {/* Filter Bar */}
             <FilterBar
                 activeFilter={filter}
                 onFilterChange={handleFilterChange}
@@ -222,12 +219,9 @@ export default function AllFeedersPage() {
                 </div>
             )}
 
-            {/* Feeder List with Horizontal Bars scaled to maxDuration */}
             <div className="space-y-4">
                 {feeders.map((feeder) => {
-                    // Scale bar relative to maxDuration (not 100% per feeder)
                     const barWidth = (feeder.totalDuration / maxDuration) * 100;
-                    // But we don't want empty bars to be zero width, so we set a minimum of 2%
                     const displayWidth = Math.max(barWidth, 0.1);
 
                     return (
@@ -249,13 +243,10 @@ export default function AllFeedersPage() {
                                 </span>
                             </div>
 
-                            {/* Horizontal Bar with Segments – scaled to maxDuration */}
                             {feeder.totalDuration > 0 ? (
                                 <div className="relative w-full h-8 bg-gray-200 rounded-full overflow-hidden">
                                     {feeder.events.map((event, idx) => {
-                                        // Each segment width is (event.duration / maxDuration) * 100
                                         const segmentWidth = (event.duration / maxDuration) * 100;
-                                        // Accumulate left offset from previous segments (relative to maxDuration)
                                         const leftOffset = feeder.events
                                             .slice(0, idx)
                                             .reduce((sum, e) => sum + (e.duration / maxDuration) * 100, 0);
@@ -268,9 +259,9 @@ export default function AllFeedersPage() {
                                                     left: `${leftOffset}%`,
                                                     width: `${Math.max(segmentWidth, 0.5)}%`,
                                                     backgroundColor: color,
-                                                    minWidth: '2px', // minimal visible segment
+                                                    minWidth: '2px',
                                                 }}
-                                                title={`${formatDateTime(event.start)} → ${formatDateTime(event.end)} (${event.duration}m)`}
+                                                title={`${formatDateTime(event.start)} → ${formatDateTime(event.end)} (${event.duration} mins)`}
                                             />
                                         );
                                     })}
@@ -281,7 +272,6 @@ export default function AllFeedersPage() {
                                 </div>
                             )}
 
-                            {/* Event list (first 3) */}
                             {feeder.events.length > 0 && (
                                 <div className="mt-2 flex flex-wrap gap-1">
                                     {feeder.events.slice(0, 3).map((event, idx) => (
@@ -290,7 +280,7 @@ export default function AllFeedersPage() {
                                             className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full text-gray-600"
                                             style={{ borderLeft: `3px solid ${colors[idx % colors.length]}` }}
                                         >
-                                            {formatDateTime(event.start)} – {event.duration}m
+                                            {formatDateTime(event.start)} – {event.duration} mins
                                         </span>
                                     ))}
                                     {feeder.events.length > 3 && (
