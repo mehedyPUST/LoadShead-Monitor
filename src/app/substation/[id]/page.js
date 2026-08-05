@@ -129,7 +129,7 @@ export default function SubstationPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // ====== COMPUTED FILTER LABEL (with actual dates) ======
+    // ====== COMPUTED FILTER LABEL ======
     const getFilterLabel = () => {
         const getTodayReadable = () => {
             const today = new Date();
@@ -172,6 +172,60 @@ export default function SubstationPage() {
                 return customMonthLabel ? `Custom Month: ${customMonthLabel}` : 'Custom Month';
             default:
                 return '';
+        }
+    };
+
+    // ====== PERIOD LABEL FOR EMPTY STATE (WITH ACTUAL DATES) ======
+    const getPeriodLabel = () => {
+        const getTodayReadable = () => {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return formatReadableDate(`${year}-${month}-${day}`);
+        };
+
+        const getDateDaysAgo = (days) => {
+            const date = new Date();
+            date.setDate(date.getDate() - days);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return formatReadableDate(`${year}-${month}-${day}`);
+        };
+
+        switch (filter) {
+            case 'today':
+                return `on ${getTodayReadable()}`;
+            case 'yesterday':
+                return `on ${getDateDaysAgo(1)}`;
+            case 'last7days': {
+                const start = getDateDaysAgo(6);
+                const end = getTodayReadable();
+                return `from ${start} to ${end}`;
+            }
+            case 'last15days': {
+                const start = getDateDaysAgo(14);
+                const end = getTodayReadable();
+                return `from ${start} to ${end}`;
+            }
+            case 'thisMonth': {
+                const now = new Date();
+                const monthName = now.toLocaleString('en-GB', { month: 'long' });
+                const year = now.getFullYear();
+                return `in ${monthName} ${year}`;
+            }
+            case 'customDate':
+                if (dateRange) {
+                    const start = formatReadableDate(dateRange.startDate);
+                    const end = formatReadableDate(dateRange.endDate);
+                    return `from ${start} to ${end}`;
+                }
+                return 'in the selected period';
+            case 'customMonth':
+                return customMonthLabel ? `in ${customMonthLabel}` : 'in the selected month';
+            default:
+                return 'today';
         }
     };
 
@@ -234,7 +288,7 @@ export default function SubstationPage() {
                     </div>
                     <div className="flex flex-wrap gap-2 text-sm">
                         <span className="badge badge-blue">Feeders: {substation.feeders?.length || 0}</span>
-                        <span className="badge badge-red">Sheds: {records.length}</span>
+                        <span className="badge badge-red">Events: {records.length}</span>
                         <span className="badge badge-yellow">Duration: {records.reduce((s, r) => s + r.duration, 0)} mins</span>
                         {canAddRecord() && <span className="badge badge-emerald">✅ Can Add Data</span>}
                     </div>
@@ -276,6 +330,7 @@ export default function SubstationPage() {
                                     substation={substation}
                                     onRecordAdded={handleRecordAdded}
                                     canAdd={canAddRecord()}
+                                    periodLabel={getPeriodLabel()}
                                 />
                             );
                         })}

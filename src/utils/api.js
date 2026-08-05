@@ -151,6 +151,11 @@ export const api = {
         return apiCall(`/records/substation/${id}?${params.toString()}`);
     },
 
+    // ✅ NEW: Get records for a specific feeder with filter
+    getRecordsByFeeder: async (feederId, view = 'today') => {
+        return apiCall(`/records?feederId=${feederId}&view=${view}`);
+    },
+
     createRecord: async (data) => {
         return apiCall('/records', {
             method: 'POST',

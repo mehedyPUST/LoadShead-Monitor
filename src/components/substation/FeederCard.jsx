@@ -15,11 +15,12 @@ export default function FeederCard({
     index,
     substation,
     onRecordAdded,
-    canAdd = false
+    canAdd = false,
+    periodLabel = 'today'
 }) {
     const { user } = useAuth();
     const totalDuration = records.reduce((sum, r) => sum + r.duration, 0);
-    const spellCount = records.length;
+    const eventCount = records.length;
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState(null);
@@ -77,6 +78,15 @@ export default function FeederCard({
         }
     };
 
+    // ✅ NEW: Format event date and time together
+    const formatEventDateTime = (date) => {
+        const d = new Date(date);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `${day}/${month} ${time}`;
+    };
+
     return (
         <>
             <motion.div
@@ -93,7 +103,7 @@ export default function FeederCard({
                             </h3>
                             <p className="text-sm text-gray-500">
                                 Total: <span className="font-bold text-red-600">{totalDuration}</span> mins
-                                &middot; Spells: <span className="font-bold">{spellCount}</span>
+                                &middot; Events: <span className="font-bold">{eventCount}</span>
                             </p>
                         </div>
                         <div className="flex gap-2">
@@ -114,6 +124,7 @@ export default function FeederCard({
                         </div>
                     </div>
 
+                    {/* Horizontal Bar */}
                     <div className="mt-3">
                         <div className="flex justify-between text-xs text-gray-500 mb-1">
                             <span>Loadshed Amount</span>
@@ -136,6 +147,7 @@ export default function FeederCard({
                         </div>
                     </div>
 
+                    {/* Events List – WITH DATE AND TIME */}
                     {records.length > 0 ? (
                         <div className="mt-3 space-y-1.5">
                             {records.map((record, idx) => (
@@ -144,7 +156,8 @@ export default function FeederCard({
                                     className="text-sm bg-gray-50 p-2 rounded flex justify-between items-center hover:bg-gray-100 transition group"
                                 >
                                     <span className="truncate">
-                                        Spell #{idx + 1}: {new Date(record.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {new Date(record.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        {/* ✅ NOW SHOWS DD/MM HH:MM → HH:MM */}
+                                        Event #{idx + 1}: {formatEventDateTime(record.startTime)} → {formatEventDateTime(record.endTime)}
                                         {record.operator?.name && (
                                             <span className="text-gray-500 ml-2">by {record.operator.name}</span>
                                         )}
@@ -177,11 +190,14 @@ export default function FeederCard({
                             ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-gray-400 mt-3">⚪ No loadshed today</p>
+                        <p className="text-sm text-gray-400 mt-3">
+                            ⚪ No loadshed events {periodLabel}
+                        </p>
                     )}
                 </div>
             </motion.div>
 
+            {/* Add Loadshed Modal */}
             <AddLoadshedModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
@@ -189,6 +205,8 @@ export default function FeederCard({
                 feeder={feeder}
                 onSuccess={handleRecordAdded}
             />
+
+            {/* Edit Loadshed Modal */}
             <EditLoadshedModal
                 isOpen={isEditModalOpen}
                 onClose={() => {
