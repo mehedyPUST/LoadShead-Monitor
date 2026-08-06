@@ -3,15 +3,18 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { motion } from 'framer-motion';
 import Layout from '@/components/common/Layout';
 import FilterBar from '@/components/substation/FilterBar';
 import FeederCard from '@/components/substation/FeederCard';
-import VerticalBarChart from '@/components/substation/VerticalBarChart';
+
+import AddFeederModal from '@/components/modals/AddFeederModal';
 import Spinner from '@/components/common/Spinner';
 import { api } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
+import HorizontalBarChart from '@/components/substation/HorizontalBarChart';
 
-// Helper functions
+// Keep existing helper functions (getOrdinal, formatReadableDate) unchanged
 const getOrdinal = (n) => {
     const s = ['th', 'st', 'nd', 'rd'];
     const v = n % 100;
@@ -48,14 +51,13 @@ export default function SubstationPage() {
     const [customMonthLabel, setCustomMonthLabel] = useState('');
     const [noData, setNoData] = useState(false);
     const [error, setError] = useState(null);
+    const [isAddFeederModalOpen, setIsAddFeederModalOpen] = useState(false);
 
     const refreshTimerRef = useRef(null);
     const retryCountRef = useRef(0);
     const isVisibleRef = useRef(true);
 
-    const hasLiveRecords = useMemo(() =>
-        records.some(r => r.isLive === true),
-        [records]);
+    const hasLiveRecords = useMemo(() => records.some(r => r.isLive), [records]);
 
     const fetchData = useCallback(async (filterType = filter, range = null) => {
         try {
@@ -64,7 +66,6 @@ export default function SubstationPage() {
             setError(null);
 
             const substationPromise = api.getSubstation(id);
-
             let recordsPromise;
             if (range && (filterType === 'customDate' || filterType === 'customMonth')) {
                 recordsPromise = api.getRecordsBySubstationWithDates(id, range.startDate, range.endDate);
@@ -75,22 +76,18 @@ export default function SubstationPage() {
             const [substationRes, recordsRes] = await Promise.all([substationPromise, recordsPromise]);
 
             if (substationRes.success) setSubstation(substationRes.data);
-
             if (recordsRes.success) {
                 setRecords(recordsRes.data);
                 setNoData(recordsRes.data.length === 0);
                 retryCountRef.current = 0;
             }
-        } catch (error) {
-            console.error(error);
-            setError(error.message);
+        } catch (err) {
+            console.error(err);
+            setError(err.message);
             setNoData(true);
-
             if (retryCountRef.current < 1) {
                 retryCountRef.current += 1;
-                setTimeout(() => {
-                    fetchData(filterType, range);
-                }, 3000);
+                setTimeout(() => fetchData(filterType, range), 3000);
             }
         } finally {
             setLoading(false);
@@ -121,89 +118,38 @@ export default function SubstationPage() {
         }
     }, [fetchData]);
 
-    const handleRecordAdded = useCallback(async () => {
+    const handleDataChanged = useCallback(async () => {
         await fetchData(filter, dateRange);
     }, [filter, dateRange, fetchData]);
 
-    // Initial fetch
-    useEffect(() => {
-        fetchData('today');
-    }, []);
-
-    // Auto-refresh with visibility check + 60 second timer
+    useEffect(() => { fetchData('today'); }, []);
     useEffect(() => {
         if (hasLiveRecords || filter === 'live') {
             refreshTimerRef.current = setInterval(() => {
-                if (isVisibleRef.current) {
-                    const silentFetch = async () => {
-                        try {
-                            let recordsRes;
-                            if (dateRange && (filter === 'customDate' || filter === 'customMonth')) {
-                                recordsRes = await api.getRecordsBySubstationWithDates(id, dateRange.startDate, dateRange.endDate);
-                            } else {
-                                recordsRes = await api.getRecordsBySubstation(id, filter);
-                            }
-                            if (recordsRes.success) {
-                                setRecords(recordsRes.data);
-                                setNoData(recordsRes.data.length === 0);
-                            }
-                        } catch (error) {
-                            console.error('Auto-refresh error:', error);
-                        }
-                    };
-                    silentFetch();
-                }
-            }, 60000); // 60 seconds
+                if (isVisibleRef.current) fetchData(filter, dateRange);
+            }, 60000);
         }
-
-        // Refresh when tab becomes visible
         const handleVisibility = () => {
             isVisibleRef.current = document.visibilityState === 'visible';
-            if (document.visibilityState === 'visible' && (hasLiveRecords || filter === 'live')) {
-                // Immediate refresh when user returns to tab
-                const silentFetch = async () => {
-                    try {
-                        let recordsRes;
-                        if (dateRange && (filter === 'customDate' || filter === 'customMonth')) {
-                            recordsRes = await api.getRecordsBySubstationWithDates(id, dateRange.startDate, dateRange.endDate);
-                        } else {
-                            recordsRes = await api.getRecordsBySubstation(id, filter);
-                        }
-                        if (recordsRes.success) {
-                            setRecords(recordsRes.data);
-                            setNoData(recordsRes.data.length === 0);
-                        }
-                    } catch (error) {
-                        console.error('Visibility refresh error:', error);
-                    }
-                };
-                silentFetch();
-            }
+            if (document.visibilityState === 'visible' && (hasLiveRecords || filter === 'live'))
+                fetchData(filter, dateRange);
         };
-
         document.addEventListener('visibilitychange', handleVisibility);
-
         return () => {
-            if (refreshTimerRef.current) {
-                clearInterval(refreshTimerRef.current);
-                refreshTimerRef.current = null;
-            }
+            if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
             document.removeEventListener('visibilitychange', handleVisibility);
         };
-    }, [hasLiveRecords, filter, id, dateRange]);
+    }, [hasLiveRecords, filter, id, dateRange, fetchData]);
 
     const totalDuration = useMemo(() =>
         records.reduce((sum, r) => sum + (r.duration || 0), 0),
         [records]);
 
-    const feeders = useMemo(() =>
-        substation?.feeders || [],
-        [substation]);
-
+    const feeders = useMemo(() => substation?.feeders || [], [substation]);
     const maxDuration = useMemo(() =>
-        Math.max(1, ...feeders.map(feeder => {
-            const feederRecords = records.filter(r => r.feederId === feeder.id);
-            return feederRecords.reduce((sum, r) => sum + (r.duration || 0), 0);
+        Math.max(1, ...feeders.map(f => {
+            const feederRecords = records.filter(r => r.feederId === f.id);
+            return feederRecords.reduce((s, r) => s + (r.duration || 0), 0);
         })),
         [feeders, records]);
 
@@ -215,141 +161,108 @@ export default function SubstationPage() {
     }, [user, id]);
 
     const getFilterLabel = () => {
-        const getTodayReadable = () => {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            return formatReadableDate(`${year}-${month}-${day}`);
-        };
-        const getDateDaysAgo = (days) => {
-            const date = new Date();
-            date.setDate(date.getDate() - days);
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return formatReadableDate(`${year}-${month}-${day}`);
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+        const daysAgo = (d) => {
+            const d2 = new Date();
+            d2.setDate(d2.getDate() - d);
+            return formatReadableDate(`${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, '0')}-${String(d2.getDate()).padStart(2, '0')}`);
         };
         switch (filter) {
-            case 'today': return `Today (${getTodayReadable()})`;
-            case 'yesterday': return `Yesterday (${getDateDaysAgo(1)})`;
-            case 'last7days': return `Last 7 Days (${getDateDaysAgo(6)} – ${getTodayReadable()})`;
-            case 'last15days': return `Last 15 Days (${getDateDaysAgo(14)} – ${getTodayReadable()})`;
-            case 'thisMonth': {
-                const now = new Date();
-                const monthName = now.toLocaleString('en-GB', { month: 'long' });
-                const year = now.getFullYear();
-                return `This Month (${monthName} ${year})`;
-            }
-            case 'customDate':
-                if (dateRange) {
-                    return `Custom Date: ${formatReadableDate(dateRange.startDate)} – ${formatReadableDate(dateRange.endDate)}`;
-                }
-                return 'Custom Date';
-            case 'customMonth':
-                return customMonthLabel ? `Custom Month: ${customMonthLabel}` : 'Custom Month';
+            case 'today': return `Today · ${formatReadableDate(todayStr)}`;
+            case 'yesterday': return `Yesterday · ${formatReadableDate(yesterdayStr)}`;
+            case 'last7days': return `Last 7 Days · ${daysAgo(6)} – ${formatReadableDate(todayStr)}`;
+            case 'last15days': return `Last 15 Days · ${daysAgo(14)} – ${formatReadableDate(todayStr)}`;
+            case 'thisMonth': return `This Month · ${today.toLocaleString('en-GB', { month: 'long' })} ${today.getFullYear()}`;
+            case 'customDate': return dateRange ? `Custom: ${formatReadableDate(dateRange.startDate)} – ${formatReadableDate(dateRange.endDate)}` : 'Custom Date';
+            case 'customMonth': return customMonthLabel ? `Custom Month: ${customMonthLabel}` : 'Custom Month';
             case 'live': return '🔴 LIVE Events';
             default: return '';
         }
     };
 
-    const getPeriodLabel = () => {
-        const getTodayReadable = () => {
-            const today = new Date();
-            return formatReadableDate(today.toISOString().split('T')[0]);
-        };
-        const getDateDaysAgo = (days) => {
-            const date = new Date();
-            date.setDate(date.getDate() - days);
-            return formatReadableDate(date.toISOString().split('T')[0]);
-        };
-        switch (filter) {
-            case 'today': return `on ${getTodayReadable()}`;
-            case 'yesterday': return `on ${getDateDaysAgo(1)}`;
-            case 'last7days': {
-                const start = getDateDaysAgo(6);
-                const end = getTodayReadable();
-                return `from ${start} to ${end}`;
-            }
-            case 'last15days': {
-                const start = getDateDaysAgo(14);
-                const end = getTodayReadable();
-                return `from ${start} to ${end}`;
-            }
-            case 'thisMonth': {
-                const now = new Date();
-                const monthName = now.toLocaleString('en-GB', { month: 'long' });
-                return `in ${monthName} ${now.getFullYear()}`;
-            }
-            case 'customDate':
-                if (dateRange) {
-                    return `from ${formatReadableDate(dateRange.startDate)} to ${formatReadableDate(dateRange.endDate)}`;
-                }
-                return 'in the selected period';
-            case 'customMonth':
-                return customMonthLabel ? `in ${customMonthLabel}` : 'in the selected month';
-            case 'live': return 'currently live';
-            default: return 'today';
-        }
-    };
-
-    if (loading) {
-        return (
-            <Layout>
-                <div className="flex justify-center items-center h-64">
-                    <Spinner size={48} />
-                </div>
-            </Layout>
-        );
-    }
-
-    if (!substation) return <Layout><div>Substation not found</div></Layout>;
+    if (loading) return <Layout><div className="flex justify-center items-center h-64"><Spinner size={48} /></div></Layout>;
+    if (!substation) return <Layout><div className="text-center py-20 text-gray-500">Substation not found</div></Layout>;
 
     return (
         <Layout>
-            <Link href="/" className="text-emerald-600 hover:underline mb-4 inline-block font-medium">← All Substations</Link>
-            <div className="card p-6 mb-6">
-                <div className="flex flex-wrap justify-between items-start gap-4">
+            {/* Breadcrumb & Header */}
+            <div className="mb-4">
+                <Link href="/" className="text-xs text-emerald-600 hover:underline">← All Substations</Link>
+            </div>
+
+            {/* Substation Info Card - Sleeker */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-4">
+                <div className="flex items-start justify-between flex-wrap gap-3">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800">🏭 {substation.name}</h1>
-                        <p className="text-gray-500">{substation.code} | {substation.location}</p>
-                        {hasLiveRecords && (
-                            <p className="text-xs text-red-500 mt-1 animate-pulse">🔴 Live event in progress - auto-refreshing every 60s</p>
+                        <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            🏭 {substation.name}
+                            {hasLiveRecords && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700 animate-pulse">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>LIVE
+                                </span>
+                            )}
+                        </h1>
+                        <p className="text-xs text-gray-500 mt-0.5">{substation.code} · {substation.location}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {/* Admin Add Feeder Button */}
+                        {user?.role === 'admin' && (
+                            <button
+                                onClick={() => setIsAddFeederModalOpen(true)}
+                                className="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition flex items-center gap-1 shadow-sm"
+                            >
+                                <span className="text-sm">➕</span> Add Feeder
+                            </button>
                         )}
                     </div>
-                    <div className="flex flex-wrap gap-2 text-sm">
-                        <span className="badge badge-blue">Feeders: {feeders.length}</span>
-                        <span className="badge badge-red">Events: {records.length}</span>
-                        <span className="badge badge-yellow">Duration: {totalDuration} mins</span>
-                        {canAddRecord && <span className="badge badge-emerald">✅ Can Add Data</span>}
+                </div>
+
+                {/* Stats Row */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-100">
+                    <div className="text-center">
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Feeders</p>
+                        <p className="text-lg font-bold text-gray-800">{feeders.length}</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Events</p>
+                        <p className="text-lg font-bold text-red-600">{records.length}</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Duration</p>
+                        <p className="text-lg font-bold text-amber-600">{totalDuration}m</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Status</p>
+                        <p className={`text-lg font-bold ${hasLiveRecords ? 'text-red-600' : 'text-emerald-600'}`}>
+                            {hasLiveRecords ? '🔴 Live' : '✅ Normal'}
+                        </p>
                     </div>
                 </div>
             </div>
 
-            {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-sm mb-4 flex items-center justify-between">
-                    <span>⚠️ {error}</span>
-                    <button onClick={() => fetchData(filter, dateRange)} className="text-red-700 underline text-xs">
-                        Retry
-                    </button>
+            {/* Filter Bar */}
+            <div className="mb-4">
+                <FilterBar activeFilter={filter} onFilterChange={handleFilterChange} filterLabel={getFilterLabel()} />
+            </div>
+
+            {/* Chart or Empty */}
+            {records.length === 0 ? (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-10 text-center text-gray-500 mb-6">
+                    <div className="text-4xl mb-3">📭</div>
+                    <p className="text-sm">No loadshed data for the selected period.</p>
+                </div>
+            ) : (
+                <div className="mb-6">
+                    <HorizontalBarChart feeders={feeders} records={records} />
                 </div>
             )}
 
-            <FilterBar activeFilter={filter} onFilterChange={handleFilterChange} filterLabel={getFilterLabel()} />
-
-            <div className="mb-8">
-                {records.length === 0 ? (
-                    <div className="card p-6 text-center text-gray-500">
-                        <div className="text-4xl mb-2">📊</div>
-                        <p className="text-sm">No loadshed data available for the selected period.</p>
-                        <p className="text-xs text-gray-400 mt-1">Add a new record using the "Add" button on any feeder.</p>
-                    </div>
-                ) : (
-                    <VerticalBarChart feeders={feeders} records={records} />
-                )}
-            </div>
-
-            <div className="space-y-4">
+            {/* Feeder Cards - Cleaner */}
+            <div className="space-y-2">
                 {feeders.map((feeder, idx) => {
                     const feederRecords = records.filter(r => r.feederId === feeder.id);
                     return (
@@ -360,19 +273,31 @@ export default function SubstationPage() {
                             maxDuration={maxDuration}
                             index={idx}
                             substation={substation}
-                            onRecordAdded={handleRecordAdded}
+                            onRecordAdded={handleDataChanged}
                             canAdd={canAddRecord}
-                            periodLabel={getPeriodLabel()}
+                            periodLabel={getFilterLabel()}
                         />
                     );
                 })}
             </div>
 
             {feeders.length === 0 && (
-                <div className="text-center py-12 bg-white rounded-xl shadow border border-gray-100">
-                    <p className="text-gray-500 text-lg">No feeders found for this substation</p>
+                <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+                    <p className="text-gray-500">No feeders found for this substation.</p>
+                    {user?.role === 'admin' && (
+                        <button onClick={() => setIsAddFeederModalOpen(true)} className="btn-primary mt-2 text-sm">
+                            ➕ Add First Feeder
+                        </button>
+                    )}
                 </div>
             )}
+
+            <AddFeederModal
+                isOpen={isAddFeederModalOpen}
+                onClose={() => setIsAddFeederModalOpen(false)}
+                substation={substation}
+                onSuccess={handleDataChanged}
+            />
         </Layout>
     );
 }
