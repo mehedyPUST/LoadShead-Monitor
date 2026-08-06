@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { memo } from 'react';
 
-export default function SubstationCard({ substation, index }) {
+const SubstationCard = memo(({ substation, index }) => {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -30,4 +31,8 @@ export default function SubstationCard({ substation, index }) {
             </Link>
         </motion.div>
     );
-}
+});
+
+SubstationCard.displayName = 'SubstationCard';
+
+export default SubstationCard;

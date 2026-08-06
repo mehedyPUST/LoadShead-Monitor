@@ -2,15 +2,15 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Layout from '@/components/common/Layout';
 import FilterBar from '@/components/substation/FilterBar';
 import EditLoadshedModal from '@/components/modals/EditLoadshedModal';
-import AddLoadshedModal from '@/components/modals/AddLoadshedModal'; // ✅ NEW
-import { api } from '@/utils/api';
+import AddLoadshedModal from '@/components/modals/AddLoadshedModal';
+import Spinner from '@/components/common/Spinner';
+import { api, apiCall } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 
-// ===== HELPER: FORMAT DATE TO "1st August 2026" =====
 const getOrdinal = (n) => {
     const s = ['th', 'st', 'nd', 'rd'];
     const v = n % 100;
@@ -25,7 +25,6 @@ const formatReadableDate = (dateStr) => {
     return `${getOrdinal(date.getDate())} ${monthName} ${date.getFullYear()}`;
 };
 
-// ===== HELPER: FORMAT EVENT DATE & TIME (DD/MM HH:MM) =====
 const formatEventDateTime = (date) => {
     const d = new Date(date);
     const day = String(d.getDate()).padStart(2, '0');
@@ -47,47 +46,34 @@ export default function FeederDetailsPage() {
     const [customMonthLabel, setCustomMonthLabel] = useState('');
     const [noData, setNoData] = useState(false);
 
-    // For modals
     const [selectedRecord, setSelectedRecord] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false); // ✅ NEW
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // ===== FETCH DATA =====
     const fetchData = useCallback(async (filterType = filter, range = null) => {
         try {
             setLoading(true);
             setNoData(false);
 
-            // Find feeder
-            const substationsRes = await api.getSubstations();
-            let foundFeeder = null;
-            let foundSubstation = null;
-            if (substationsRes.success) {
-                for (const ss of substationsRes.data) {
-                    const ssDetail = await api.getSubstation(ss.id);
-                    if (ssDetail.success) {
-                        const feeder = ssDetail.data.feeders?.find(f => f.id === feederId);
-                        if (feeder) {
-                            foundFeeder = { ...feeder, substation: ssDetail.data };
-                            foundSubstation = ssDetail.data;
-                            break;
-                        }
-                    }
-                }
-            }
-            setFeeder(foundFeeder);
+            // 🔥 Fetch feeder and records IN PARALLEL
+            const feederPromise = apiCall(`/feeders/${feederId}/with-substation`);
 
-            // Fetch records
-            let recordsRes;
+            let recordsPromise;
             if (range && (filterType === 'customDate' || filterType === 'customMonth')) {
-                recordsRes = await api.getRecords({
+                recordsPromise = api.getRecords({
                     feederId,
                     startDate: range.startDate,
-                    endDate: range.endDate,
+                    endDate: range.endDate
                 });
             } else {
-                recordsRes = await api.getRecordsByFeeder(feederId, filterType);
+                recordsPromise = api.getRecordsByFeeder(feederId, filterType);
+            }
+
+            const [feederRes, recordsRes] = await Promise.all([feederPromise, recordsPromise]);
+
+            if (feederRes.success) {
+                setFeeder(feederRes.data);
             }
 
             if (recordsRes.success) {
@@ -95,7 +81,7 @@ export default function FeederDetailsPage() {
                 setNoData(recordsRes.data.length === 0);
             }
         } catch (error) {
-            console.error('Error fetching feeder data:', error);
+            console.error(error);
             setNoData(true);
         } finally {
             setLoading(false);
@@ -105,13 +91,13 @@ export default function FeederDetailsPage() {
     const handleFilterChange = useCallback((filterData) => {
         const { type, startDate, endDate, month, year } = filterData;
         setFilter(type);
-
         if (type === 'customDate' && startDate && endDate) {
             setDateRange({ startDate, endDate });
             setCustomMonthLabel('');
             fetchData('customDate', { startDate, endDate });
         } else if (type === 'customMonth' && month && year) {
-            const monthIndex = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].indexOf(month);
+            const monthIndex = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'].indexOf(month);
             const start = new Date(year, monthIndex, 1);
             const end = new Date(year, monthIndex + 1, 0);
             const startStr = start.toISOString().split('T')[0];
@@ -126,13 +112,10 @@ export default function FeederDetailsPage() {
         }
     }, [fetchData]);
 
-    // Initial fetch
     useEffect(() => {
         fetchData('today');
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // ===== COMPUTED LABELS =====
     const getFilterLabel = () => {
         const getTodayReadable = () => {
             const today = new Date();
@@ -143,7 +126,6 @@ export default function FeederDetailsPage() {
             date.setDate(date.getDate() - days);
             return formatReadableDate(date.toISOString().split('T')[0]);
         };
-
         switch (filter) {
             case 'today': return `Today (${getTodayReadable()})`;
             case 'yesterday': return `Yesterday (${getDateDaysAgo(1)})`;
@@ -166,166 +148,97 @@ export default function FeederDetailsPage() {
     };
 
     const getPeriodLabel = () => {
-        const getTodayReadable = () => {
-            const today = new Date();
-            return formatReadableDate(today.toISOString().split('T')[0]);
-        };
-        const getDateDaysAgo = (days) => {
-            const date = new Date();
-            date.setDate(date.getDate() - days);
-            return formatReadableDate(date.toISOString().split('T')[0]);
-        };
-
-        switch (filter) {
-            case 'today': return `on ${getTodayReadable()}`;
-            case 'yesterday': return `on ${getDateDaysAgo(1)}`;
-            case 'last7days': {
-                const start = getDateDaysAgo(6);
-                const end = getTodayReadable();
-                return `from ${start} to ${end}`;
-            }
-            case 'last15days': {
-                const start = getDateDaysAgo(14);
-                const end = getTodayReadable();
-                return `from ${start} to ${end}`;
-            }
-            case 'thisMonth': {
-                const now = new Date();
-                const monthName = now.toLocaleString('en-GB', { month: 'long' });
-                return `in ${monthName} ${now.getFullYear()}`;
-            }
-            case 'customDate':
-                if (dateRange) {
-                    return `from ${formatReadableDate(dateRange.startDate)} to ${formatReadableDate(dateRange.endDate)}`;
-                }
-                return 'in the selected period';
-            case 'customMonth':
-                return customMonthLabel ? `in ${customMonthLabel}` : 'in the selected month';
-            default: return 'today';
-        }
+        return 'today';
     };
 
-    const totalDuration = records.reduce((sum, r) => sum + r.duration, 0);
+    // 🔥 Memoize total duration calculation
+    const totalDuration = useMemo(() =>
+        records.reduce((sum, r) => sum + r.duration, 0),
+        [records]);
 
-    // ===== EDIT / DELETE / ADD HANDLERS =====
-    const canEdit = () => {
+    const canEdit = useMemo(() => {
         if (!user || !feeder) return false;
         if (user.role === 'admin') return true;
-        if (user.role === 'sba') {
-            return user.substationId === feeder.substation.id;
-        }
+        if (user.role === 'sba') return user.substationId === feeder.substation?.id;
         return false;
-    };
+    }, [user, feeder]);
 
-    const openEditModal = (record) => {
+    const openEditModal = useCallback((record) => {
         setSelectedRecord(record);
         setIsEditModalOpen(true);
-    };
+    }, []);
 
-    const handleRecordUpdated = async () => {
+    const handleRecordUpdated = useCallback(async () => {
         await fetchData(filter, dateRange);
         setIsEditModalOpen(false);
         setSelectedRecord(null);
-    };
+    }, [fetchData, filter, dateRange]);
 
-    const handleRecordAdded = async () => {
+    const handleRecordAdded = useCallback(async () => {
         await fetchData(filter, dateRange);
         setIsAddModalOpen(false);
-    };
+    }, [fetchData, filter, dateRange]);
 
-    const handleDelete = async (recordId) => {
+    const handleDelete = useCallback(async (recordId) => {
         if (!confirm('Are you sure you want to delete this loadshed record?')) return;
         setIsDeleting(true);
         try {
             const response = await api.deleteRecord(recordId);
-            if (response.success) {
-                await fetchData(filter, dateRange);
-            } else {
-                alert('Failed to delete record');
-            }
+            if (response.success) await fetchData(filter, dateRange);
+            else alert('Failed to delete record');
         } catch (error) {
             alert('Error deleting record');
         } finally {
             setIsDeleting(false);
         }
-    };
+    }, [fetchData, filter, dateRange]);
 
-    // ===== RENDER =====
     if (loading) {
         return (
             <Layout>
                 <div className="flex justify-center items-center h-64">
-                    <div className="text-gray-500">Loading...</div>
+                    <Spinner size={48} />
                 </div>
             </Layout>
         );
     }
 
-    if (!feeder) {
-        return (
-            <Layout>
-                <div className="text-center py-20">
-                    <p className="text-xl text-gray-600">Feeder not found</p>
-                    <Link href="/" className="text-emerald-600 hover:underline mt-4 inline-block">
-                        ← Go back home
-                    </Link>
-                </div>
-            </Layout>
-        );
-    }
+    if (!feeder) return <Layout><div>Feeder not found</div></Layout>;
 
     return (
         <Layout>
-            <Link
-                href={`/substation/${feeder.substation.id}`}
-                className="text-emerald-600 hover:underline mb-4 inline-block font-medium"
-            >
-                ← Back to {feeder.substation.name}
+            <Link href={`/substation/${feeder.substation?.id}`} className="text-emerald-600 hover:underline mb-4 inline-block font-medium">
+                ← Back to {feeder.substation?.name}
             </Link>
-
             <div className="card p-6 mb-6">
                 <div className="flex flex-wrap justify-between items-start gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800">⚡ {feeder.name}</h1>
-                        <p className="text-gray-500">{feeder.substation.name} | {feeder.substation.code}</p>
-                        <p className="text-sm text-gray-400 mt-1">{feeder.substation.location}</p>
+                        <p className="text-gray-500">{feeder.substation?.name} | {feeder.substation?.code}</p>
+                        <p className="text-sm text-gray-400 mt-1">{feeder.substation?.location}</p>
                     </div>
                     <div className="flex flex-wrap gap-2 text-sm">
                         <span className="badge badge-red">Events: {records.length}</span>
                         <span className="badge badge-yellow">Total Duration: {totalDuration} mins</span>
-                        {canEdit() && <span className="badge badge-emerald">✅ Can Edit</span>}
+                        {canEdit && <span className="badge badge-emerald">✅ Can Edit</span>}
                     </div>
                 </div>
             </div>
-
-            <FilterBar
-                activeFilter={filter}
-                onFilterChange={handleFilterChange}
-                filterLabel={getFilterLabel()}
-            />
-
-            {/* ===== ADD BUTTON ===== */}
-            {canEdit() && (
+            <FilterBar activeFilter={filter} onFilterChange={handleFilterChange} filterLabel={getFilterLabel()} />
+            {canEdit && (
                 <div className="mb-4">
-                    <button
-                        onClick={() => setIsAddModalOpen(true)}
-                        className="btn-primary flex items-center gap-2"
-                    >
+                    <button onClick={() => setIsAddModalOpen(true)} className="btn-primary flex items-center gap-2">
                         ➕ Add Loadshed Event
                     </button>
                 </div>
             )}
-
             {noData && (
                 <div className="card p-12 text-center my-6">
                     <div className="text-6xl mb-4">📭</div>
                     <h3 className="text-xl font-semibold text-gray-700">No loadshed records found</h3>
-                    <p className="text-gray-500 mt-2">
-                        There are no loadshed events for this feeder {getPeriodLabel()}.
-                    </p>
+                    <p className="text-gray-500 mt-2">There are no loadshed events for this feeder {getPeriodLabel()}.</p>
                 </div>
             )}
-
             {!noData && (
                 <div className="space-y-3">
                     {records.map((record, idx) => (
@@ -344,22 +257,10 @@ export default function FeederDetailsPage() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="font-bold text-red-600 text-lg">{record.duration} mins</span>
-                                    {canEdit() && (
+                                    {canEdit && (
                                         <div className="flex gap-1">
-                                            <button
-                                                onClick={() => openEditModal(record)}
-                                                className="text-blue-500 hover:text-blue-700 text-sm font-medium px-1"
-                                                title="Edit"
-                                            >
-                                                ✏️
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(record.id)}
-                                                className="text-red-500 hover:text-red-700 text-sm font-medium px-1"
-                                                title="Delete"
-                                            >
-                                                🗑️
-                                            </button>
+                                            <button onClick={() => openEditModal(record)} className="text-blue-500 hover:text-blue-700 text-sm font-medium px-1" title="Edit">✏️</button>
+                                            <button onClick={() => handleDelete(record.id)} className="text-red-500 hover:text-red-700 text-sm font-medium px-1" title="Delete">🗑️</button>
                                         </div>
                                     )}
                                 </div>
@@ -368,23 +269,16 @@ export default function FeederDetailsPage() {
                     ))}
                 </div>
             )}
-
-            {/* Edit Modal */}
             {selectedRecord && (
                 <EditLoadshedModal
                     isOpen={isEditModalOpen}
-                    onClose={() => {
-                        setIsEditModalOpen(false);
-                        setSelectedRecord(null);
-                    }}
+                    onClose={() => { setIsEditModalOpen(false); setSelectedRecord(null); }}
                     record={selectedRecord}
                     substation={feeder.substation}
                     feeder={feeder}
                     onSuccess={handleRecordUpdated}
                 />
             )}
-
-            {/* Add Modal */}
             <AddLoadshedModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}

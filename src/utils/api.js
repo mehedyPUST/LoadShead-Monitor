@@ -1,6 +1,26 @@
+'use client';
+
+import useSWR from 'swr';
+
+const fetcher = (url) => fetch(url).then(res => res.json());
+
+export function useData(endpoint) {
+    const { data, error } = useSWR(endpoint, fetcher, {
+        revalidateOnFocus: false,
+        refreshInterval: 60000,
+        dedupingInterval: 30000,
+    });
+    return { data, error, isLoading: !data && !error };
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-// ===== CORE API CALL =====
+// ===== GLOBAL SUBSTATION CACHE =====
+let substationsCache = null;
+let substationsCacheTime = 0;
+const CACHE_DURATION = 60000; // 1 minute
+
+// ===== CORE API CALL FUNCTION =====
 const apiCall = async (endpoint, options = {}) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
@@ -45,7 +65,7 @@ const apiCall = async (endpoint, options = {}) => {
     }
 };
 
-// ===== EXPOSE apiCall FOR OTHER COMPONENTS =====
+// ===== EXPOSE apiCall FOR DIRECT USE =====
 export { apiCall };
 
 // ===== API OBJECT =====
@@ -92,9 +112,18 @@ export const api = {
         return apiCall('/auth/me');
     },
 
-    // Substations
-    getSubstations: async () => {
-        return apiCall('/substations');
+    // Substations (with global cache)
+    getSubstations: async (forceRefresh = false) => {
+        const now = Date.now();
+        if (!forceRefresh && substationsCache && (now - substationsCacheTime < CACHE_DURATION)) {
+            return { success: true, data: substationsCache };
+        }
+        const response = await apiCall('/substations');
+        if (response.success) {
+            substationsCache = response.data;
+            substationsCacheTime = now;
+        }
+        return response;
     },
 
     getSubstation: async (id) => {
@@ -102,10 +131,13 @@ export const api = {
     },
 
     createSubstation: async (data) => {
-        return apiCall('/substations', {
+        const response = await apiCall('/substations', {
             method: 'POST',
             body: JSON.stringify(data),
         });
+        // Invalidate cache
+        substationsCache = null;
+        return response;
     },
 
     // Feeders
@@ -164,15 +196,19 @@ export const api = {
         return apiCall(`/records/substation/${id}?${params.toString()}`);
     },
 
+    // 🔥 FIXED: Proper endpoint for records by feeder
     getRecordsByFeeder: async (feederId, view = 'today') => {
         return apiCall(`/records?feederId=${feederId}&view=${view}`);
     },
 
     createRecord: async (data) => {
-        return apiCall('/records', {
+        const response = await apiCall('/records', {
             method: 'POST',
             body: JSON.stringify(data),
         });
+        // Invalidate substation cache when new record is created
+        substationsCache = null;
+        return response;
     },
 
     updateRecord: async (id, data) => {
@@ -204,6 +240,7 @@ export const api = {
         });
     },
 
+    // 🔥 FIXED: Now points to /admin/users/:id/password
     changeUserPassword: async (userId, newPassword) => {
         return apiCall(`/admin/users/${userId}/password`, {
             method: 'PUT',

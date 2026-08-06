@@ -1,57 +1,76 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 
 export default function VerticalBarChart({ feeders, records }) {
     const [hoveredBar, setHoveredBar] = useState(null);
 
-    const feederData = feeders.map((feeder) => {
-        const feederRecords = records.filter(r => r.feederId === feeder.id);
-        const totalMinutes = feederRecords.reduce((sum, r) => sum + r.duration, 0);
-        const spellCount = feederRecords.length;
-        return { ...feeder, totalMinutes, spellCount };
-    });
+    // 🔥 MEMOIZED: Feeder data calculation (uses live duration from API)
+    const feederData = useMemo(() =>
+        feeders.map((feeder) => {
+            const feederRecords = records.filter(r => r.feederId === feeder.id);
+            const totalMinutes = feederRecords.reduce((sum, r) => sum + (r.duration || 0), 0);
+            const spellCount = feederRecords.length;
+            const hasLive = feederRecords.some(r => r.isLive === true);
+            return { ...feeder, totalMinutes, spellCount, hasLive };
+        }),
+        [feeders, records]);
 
-    const maxMinutes = Math.max(...feederData.map(f => f.totalMinutes), 1);
+    // 🔥 MEMOIZED: Max minutes
+    const maxMinutes = useMemo(() =>
+        Math.max(...feederData.map(f => f.totalMinutes), 1),
+        [feederData]);
+
+    // 🔥 MEMOIZED: Total duration
+    const totalDuration = useMemo(() =>
+        feederData.reduce((sum, f) => sum + f.totalMinutes, 0),
+        [feederData]);
+
+    // 🔥 MEMOIZED: Feeders with shed
+    const feedersWithShed = useMemo(() =>
+        feederData.filter(f => f.totalMinutes > 0).length,
+        [feederData]);
 
     const colors = [
         '#4F46E5', '#7C3AED', '#EC4899', '#EF4444', '#F59E0B',
         '#10B981', '#06B6D4', '#3B82F6', '#8B5CF6', '#14B8A6',
     ];
 
-    const getShortName = (name) => {
+    const getShortName = useCallback((name) => {
         if (name.length <= 12) return name;
         return name.substring(0, 10) + '...';
-    };
+    }, []);
 
-    const formatDuration = (minutes) => {
+    const formatDuration = useCallback((minutes) => {
         if (minutes === 0) return '0 min';
         if (minutes < 60) return `${minutes}m`;
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
         return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-    };
+    }, []);
 
-    const getBarGradient = (value, max) => {
+    const getBarGradient = useCallback((value, max, hasLive) => {
+        if (hasLive) return 'linear-gradient(180deg, #F87171, #DC2626)'; // 🔥 Pulsing red for live
         const ratio = value / max;
         if (ratio === 0) return '#E5E7EB';
         if (ratio < 0.3) return 'linear-gradient(180deg, #34D399, #10B981)';
         if (ratio < 0.6) return 'linear-gradient(180deg, #FBBF24, #F59E0B)';
         if (ratio < 0.8) return 'linear-gradient(180deg, #FB923C, #F97316)';
         return 'linear-gradient(180deg, #F87171, #EF4444)';
-    };
+    }, []);
 
-    const getStatusLabel = (value) => {
+    const getStatusLabel = useCallback((value, hasLive) => {
+        if (hasLive) return { text: '🔴 LIVE', color: 'text-red-600' };
         if (value === 0) return { text: 'No Loadshed', color: 'text-gray-400' };
         if (value < 30) return { text: 'Low', color: 'text-emerald-600' };
         if (value < 60) return { text: 'Moderate', color: 'text-amber-600' };
         if (value < 120) return { text: 'High', color: 'text-orange-600' };
         return { text: 'Critical', color: 'text-red-600' };
-    };
+    }, []);
 
-    const totalDuration = feederData.reduce((sum, f) => sum + f.totalMinutes, 0);
-    const feedersWithShed = feederData.filter(f => f.totalMinutes > 0).length;
+    const handleMouseEnter = useCallback((index) => setHoveredBar(index), []);
+    const handleMouseLeave = useCallback(() => setHoveredBar(null), []);
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -76,6 +95,12 @@ export default function VerticalBarChart({ feeders, records }) {
                             <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
                             Spells
                         </span>
+                        {feederData.some(f => f.hasLive) && (
+                            <span className="flex items-center gap-1.5 px-2.5 py-1 bg-red-50 rounded-full border border-red-200 animate-pulse">
+                                <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                                🔴 LIVE
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -105,15 +130,15 @@ export default function VerticalBarChart({ feeders, records }) {
                         {feederData.map((item, index) => {
                             const heightPercent = maxMinutes > 0 ? (item.totalMinutes / maxMinutes) * 100 : 0;
                             const barHeight = Math.max(heightPercent, 4);
-                            const status = getStatusLabel(item.totalMinutes);
+                            const status = getStatusLabel(item.totalMinutes, item.hasLive);
                             const isHovered = hoveredBar === index;
 
                             return (
                                 <div
                                     key={item.id}
                                     className="flex-1 flex flex-col items-center h-full group"
-                                    onMouseEnter={() => setHoveredBar(index)}
-                                    onMouseLeave={() => setHoveredBar(null)}
+                                    onMouseEnter={() => handleMouseEnter(index)}
+                                    onMouseLeave={handleMouseLeave}
                                 >
                                     <div className="relative w-full max-w-[56px] flex-1 flex items-end">
                                         <div className={`
@@ -123,13 +148,16 @@ export default function VerticalBarChart({ feeders, records }) {
                                             ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}
                                             min-w-[120px] text-center shadow-xl
                                         `}>
-                                            <div className="font-semibold text-white/90 mb-0.5">{item.name}</div>
+                                            <div className="font-semibold text-white/90 mb-0.5">
+                                                {item.name}
+                                                {item.hasLive && ' 🔴'}
+                                            </div>
                                             <div className="flex items-center justify-center gap-3">
                                                 <span className="text-white font-bold">{item.totalMinutes} mins</span>
                                                 <span className="text-white/50">|</span>
                                                 <span className="text-blue-300">{item.spellCount} spells</span>
                                             </div>
-                                            <div className={`text-xs mt-0.5 text-white/80`}>
+                                            <div className={`text-xs mt-0.5 ${item.hasLive ? 'text-red-300' : 'text-white/80'}`}>
                                                 {status.text}
                                             </div>
                                             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45" />
@@ -138,17 +166,31 @@ export default function VerticalBarChart({ feeders, records }) {
                                         <motion.div
                                             initial={{ height: 0 }}
                                             animate={{ height: `${barHeight}%` }}
-                                            transition={{ duration: 0.6, delay: index * 0.05, ease: "easeOut" }}
+                                            transition={{
+                                                duration: item.hasLive ? 0.3 : 0.6, // 🔥 Faster animation for live bars
+                                                delay: index * 0.05,
+                                                ease: "easeOut"
+                                            }}
                                             className="w-full relative group"
                                             style={{
                                                 height: `${barHeight}%`,
                                                 minHeight: item.totalMinutes > 0 ? '8px' : '4px',
-                                                background: getBarGradient(item.totalMinutes, maxMinutes),
+                                                background: getBarGradient(item.totalMinutes, maxMinutes, item.hasLive),
                                                 borderRadius: '6px 6px 0 0',
-                                                boxShadow: item.totalMinutes > 0 ? '0 2px 8px rgba(79, 70, 229, 0.15)' : 'none',
+                                                boxShadow: item.totalMinutes > 0
+                                                    ? (item.hasLive
+                                                        ? '0 2px 12px rgba(220, 38, 38, 0.4)' // 🔥 Red glow for live
+                                                        : '0 2px 8px rgba(79, 70, 229, 0.15)')
+                                                    : 'none',
                                             }}
                                         >
-                                            {item.totalMinutes > 0 && (
+                                            {/* 🔥 Pulsing animation overlay for live bars */}
+                                            {item.hasLive && (
+                                                <div className="absolute inset-0 rounded-t-lg animate-pulse opacity-30"
+                                                    style={{ background: 'rgba(255, 255, 255, 0.3)' }}
+                                                />
+                                            )}
+                                            {item.totalMinutes > 0 && !item.hasLive && (
                                                 <div className={`
                                                     absolute inset-0 rounded-t-lg transition-opacity duration-300
                                                     ${isHovered ? 'opacity-100' : 'opacity-0'}
@@ -156,22 +198,23 @@ export default function VerticalBarChart({ feeders, records }) {
                                                 `} />
                                             )}
                                             {item.spellCount > 0 && (
-                                                <div className="absolute -top-2.5 -right-2.5 bg-blue-500 text-white text-[8px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center shadow-md border-2 border-white">
+                                                <div className={`absolute -top-2.5 -right-2.5 text-white text-[8px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center shadow-md border-2 border-white ${item.hasLive ? 'bg-red-500 animate-pulse' : 'bg-blue-500'}`}>
                                                     {item.spellCount}
                                                 </div>
                                             )}
                                         </motion.div>
                                     </div>
 
-                                    <div className="mt-2 text-xs font-semibold text-gray-700">
+                                    <div className={`mt-2 text-xs font-semibold ${item.hasLive ? 'text-red-600' : 'text-gray-700'}`}>
                                         {item.totalMinutes > 0 ? `${item.totalMinutes}m` : '0'}
+                                        {item.hasLive && ' ↑'}
                                     </div>
 
                                     <div className="text-[10px] text-gray-500 text-center leading-tight max-w-[52px] truncate font-medium">
                                         {getShortName(item.name)}
                                     </div>
 
-                                    <div className={`mt-1 w-1.5 h-1.5 rounded-full ${item.totalMinutes > 0 ? 'bg-emerald-400' : 'bg-gray-300'}`} />
+                                    <div className={`mt-1 w-1.5 h-1.5 rounded-full ${item.hasLive ? 'bg-red-500 animate-pulse' : item.totalMinutes > 0 ? 'bg-emerald-400' : 'bg-gray-300'}`} />
                                 </div>
                             );
                         })}
@@ -200,6 +243,10 @@ export default function VerticalBarChart({ feeders, records }) {
                     <span className="flex items-center gap-1.5">
                         <span className="w-3 h-3 rounded bg-gradient-to-r from-red-400 to-red-600" />
                         Critical
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded bg-red-500 animate-pulse" />
+                        🔴 LIVE
                     </span>
                 </div>
                 <div>
