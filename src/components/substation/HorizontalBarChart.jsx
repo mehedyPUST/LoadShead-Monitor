@@ -18,38 +18,30 @@ export default function HorizontalBarChart({ feeders, records }) {
         return () => window.removeEventListener('resize', checkScreen);
     }, []);
 
-    const feederData = useMemo(() =>
-        feeders
-            .map((feeder) => {
-                const feederRecords = records.filter(r => r.feederId === feeder.id);
-                const totalMinutes = feederRecords.reduce((sum, r) => sum + (r.duration || 0), 0);
-                const spellCount = feederRecords.length;
-                const hasLive = feederRecords.some(r => r.isLive === true);
-                return { ...feeder, totalMinutes, spellCount, hasLive };
-            })
-            .sort((a, b) => b.totalMinutes - a.totalMinutes),
-        [feeders, records]);
+    const feederData = useMemo(
+        () =>
+            feeders
+                .map((feeder) => {
+                    const feederRecords = records.filter((r) => r.feederId === feeder.id);
+                    const totalMinutes = feederRecords.reduce((sum, r) => sum + (r.duration || 0), 0);
+                    const spellCount = feederRecords.length;
+                    const hasLive = feederRecords.some((r) => r.isLive === true);
+                    return { ...feeder, totalMinutes, spellCount, hasLive };
+                })
+                .sort((a, b) => b.totalMinutes - a.totalMinutes),
+        [feeders, records]
+    );
 
-    const maxMinutes = useMemo(() =>
-        Math.max(...feederData.map(f => f.totalMinutes), 1),
-        [feederData]);
+    const maxMinutes = useMemo(
+        () => Math.max(...feederData.map((f) => f.totalMinutes), 1),
+        [feederData]
+    );
 
+    // Always show in minutes
     const formatMinutes = useCallback((mins) => {
-        if (mins === 0) return '0m';
-        if (mins < 60) return `${mins}m`;
-        const h = Math.floor(mins / 60);
-        const m = mins % 60;
-        return m > 0 ? `${h}h ${m}m` : `${h}h`;
+        if (mins === 0) return '0 min';
+        return `${mins} min`;
     }, []);
-
-    const getBarColor = (value, hasLive) => {
-        if (hasLive) return '#EF4444';
-        if (value === 0) return '#E5E7EB';
-        if (value < 30) return '#10B981';
-        if (value < 60) return '#F59E0B';
-        if (value < 120) return '#F97316';
-        return '#EF4444';
-    };
 
     const getBarGradient = (value, hasLive) => {
         if (hasLive) return 'from-red-500 to-red-600';
@@ -60,18 +52,16 @@ export default function HorizontalBarChart({ feeders, records }) {
         return 'from-red-400 to-red-600';
     };
 
-    // Responsive sizes
-    const barHeight = isMobile ? 'h-5' : isTablet ? 'h-6' : 'h-7';
-    const fontSize = isMobile ? 'text-[10px]' : 'text-xs';
-    const durationWidth = isMobile ? 'w-12' : 'w-16';
-    const gap = isMobile ? 'gap-0.5' : 'gap-1';
-    const padding = isMobile ? 'px-2 py-1.5' : 'px-3 py-1.5';
+    const barHeight = isMobile ? 'h-7' : isTablet ? 'h-7' : 'h-8';
+    const fontSize = isMobile ? 'text-[11px]' : 'text-xs';
+    const gap = isMobile ? 'gap-1.5' : 'gap-3';
+    const padding = isMobile ? 'px-2 py-1.5' : 'px-3 py-2';
 
     const displayData = isMobile ? feederData.slice(0, 8) : feederData;
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-shadow hover:shadow-md">
-            {/* Header - Refined */}
+            {/* Header */}
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex flex-wrap items-center justify-between bg-gradient-to-r from-gray-50/50 to-white">
                 <div className="flex items-center gap-2">
                     <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full" />
@@ -81,7 +71,7 @@ export default function HorizontalBarChart({ feeders, records }) {
                 </div>
                 <div className="flex items-center gap-3">
                     <span className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-gray-500 font-medium`}>
-                        {displayData.filter(f => f.totalMinutes > 0).length} affected
+                        {displayData.filter((f) => f.totalMinutes > 0).length} affected
                     </span>
                     <span className="w-px h-4 bg-gray-200" />
                     <span className={`${isMobile ? 'text-[10px]' : 'text-xs'} text-gray-400`}>
@@ -91,16 +81,59 @@ export default function HorizontalBarChart({ feeders, records }) {
                 </div>
             </div>
 
-            {/* Bars - Clean spacing */}
-            <div className={`${isMobile ? 'px-2 py-3' : 'px-4 sm:px-6 py-4'} space-y-1.5`}>
+            {/* Bars */}
+            <div className={`${isMobile ? 'px-3 py-3' : 'px-4 sm:px-6 py-4'} space-y-2`}>
                 {displayData.map((item, index) => {
                     const barWidth = (item.totalMinutes / maxMinutes) * 100;
-                    const color = getBarColor(item.totalMinutes, item.hasLive);
                     const gradient = getBarGradient(item.totalMinutes, item.hasLive);
                     const isDark = item.totalMinutes > 30 || item.hasLive;
                     const textColor = isDark ? 'text-white' : 'text-gray-700';
-                    const showNameInside = barWidth > 25;
 
+                    // ========== MOBILE LAYOUT ==========
+                    if (isMobile) {
+                        return (
+                            <motion.div
+                                key={item.id}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.3, delay: index * 0.03 }}
+                                className={`flex items-center ${gap} group ${padding} rounded-lg hover:bg-gray-50/70 transition-all duration-200`}
+                            >
+                                <div className={`flex-1 ${barHeight} bg-gray-100 rounded-lg relative overflow-hidden`}>
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.max(barWidth, 1)}%` }}
+                                        transition={{ duration: 0.6, delay: index * 0.04, ease: [0.25, 0.46, 0.45, 0.94] }}
+                                        className={`h-full rounded-lg absolute top-0 left-0 bg-gradient-to-r ${gradient} ${item.hasLive ? 'animate-pulse' : ''
+                                            }`}
+                                        style={{
+                                            minWidth: item.totalMinutes > 0 ? '6px' : '0px',
+                                        }}
+                                    />
+
+                                    {/* Name (left) + Duration (right) always visible */}
+                                    <div className={`absolute inset-0 flex items-center justify-between px-3 ${fontSize} font-medium`}>
+                                        <span className={`truncate pr-3 ${item.totalMinutes > 0 && isDark ? 'text-white' : 'text-gray-700'}`}>
+                                            {item.name}
+                                        </span>
+                                        <span
+                                            className={`flex-shrink-0 tabular-nums font-semibold ${item.hasLive
+                                                    ? 'text-red-600'
+                                                    : item.totalMinutes > 0 && isDark
+                                                        ? 'text-white'
+                                                        : 'text-gray-600'
+                                                }`}
+                                        >
+                                            {item.totalMinutes > 0 ? formatMinutes(item.totalMinutes) : '—'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        );
+                    }
+
+                    // ========== DESKTOP / TABLET LAYOUT ==========
+                    // Name → Bar → Minutes
                     return (
                         <motion.div
                             key={item.id}
@@ -109,64 +142,39 @@ export default function HorizontalBarChart({ feeders, records }) {
                             transition={{ duration: 0.3, delay: index * 0.03 }}
                             className={`flex items-center ${gap} group ${padding} rounded-lg hover:bg-gray-50/70 transition-all duration-200`}
                         >
-                            {/* Bar track - Refined */}
-                            <div className={`flex-1 ${barHeight} bg-gray-100/80 rounded-md relative overflow-hidden shadow-inner`}>
+                            {/* Feeder Name (outside - left) */}
+                            <div className={`w-32 flex-shrink-0 ${fontSize} font-medium text-gray-700 truncate pr-2`}>
+                                {item.name}
+                            </div>
+
+                            {/* Bar */}
+                            <div className={`flex-1 ${barHeight} bg-gray-100 rounded-lg relative overflow-hidden`}>
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${Math.max(barWidth, 1)}%` }}
                                     transition={{ duration: 0.6, delay: index * 0.04, ease: [0.25, 0.46, 0.45, 0.94] }}
-                                    className={`h-full rounded-md absolute top-0 left-0 bg-gradient-to-r ${gradient} ${item.hasLive ? 'animate-pulse' : ''}`}
+                                    className={`h-full rounded-lg absolute top-0 left-0 bg-gradient-to-r ${gradient} ${item.hasLive ? 'animate-pulse' : ''
+                                        }`}
                                     style={{
-                                        minWidth: item.totalMinutes > 0 ? '4px' : '0px',
-                                        boxShadow: item.hasLive
-                                            ? '0 0 20px rgba(239,68,68,0.3)'
-                                            : item.totalMinutes > 0
-                                                ? '0 2px 8px rgba(0,0,0,0.05)'
-                                                : 'none',
+                                        minWidth: item.totalMinutes > 0 ? '6px' : '0px',
                                     }}
-                                >
-                                    {showNameInside && (
-                                        <span
-                                            className={`absolute inset-0 flex items-center px-2 text-left ${fontSize} font-medium ${textColor} truncate tracking-tight`}
-                                        >
-                                            {item.name}
-                                        </span>
-                                    )}
-                                </motion.div>
-
-                                {!showNameInside && item.totalMinutes > 0 && (
-                                    <span className={`absolute inset-0 flex items-center px-2 text-left ${fontSize} font-medium text-gray-600 truncate`}>
-                                        {item.name}
-                                    </span>
-                                )}
-
-                                {item.totalMinutes === 0 && (
-                                    <span className={`absolute inset-0 flex items-center px-2 text-left ${fontSize} font-medium text-gray-400 truncate`}>
-                                        {item.name}
-                                    </span>
-                                )}
-
-                                {/* Subtle shimmer on hover */}
-                                {item.totalMinutes > 0 && (
-                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                        <div className="w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12" />
-                                    </div>
-                                )}
+                                />
                             </div>
 
-                            {/* Duration - Polished */}
-                            <div className={`${durationWidth} flex-shrink-0 flex items-center gap-0.5 justify-end`}>
-                                <span className={`${fontSize} font-semibold tabular-nums ${item.hasLive ? 'text-red-600' : 'text-gray-700'}`}>
+                            {/* Duration (outside - right) */}
+                            <div className="w-20 flex-shrink-0 flex items-center gap-1.5 justify-end">
+                                <span
+                                    className={`${fontSize} font-semibold tabular-nums ${item.hasLive ? 'text-red-600' : 'text-gray-700'
+                                        }`}
+                                >
                                     {item.totalMinutes > 0 ? formatMinutes(item.totalMinutes) : '—'}
                                 </span>
-                                {item.spellCount > 0 && !isMobile && (
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${item.hasLive ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
+                                {item.spellCount > 0 && (
+                                    <span
+                                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${item.hasLive ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'
+                                            }`}
+                                    >
                                         {item.spellCount}
-                                    </span>
-                                )}
-                                {item.spellCount > 0 && isMobile && (
-                                    <span className="text-[8px] text-gray-400 ml-0.5 font-medium">
-                                        {item.spellCount}x
                                     </span>
                                 )}
                             </div>
@@ -175,7 +183,7 @@ export default function HorizontalBarChart({ feeders, records }) {
                 })}
             </div>
 
-            {/* Footer - Refined legend */}
+            {/* Footer / Legend */}
             <div className="px-4 sm:px-6 py-2 border-t border-gray-100 bg-gray-50/50 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap gap-3 sm:gap-4 text-[10px] text-gray-500">
                     <span className="flex items-center gap-1.5">
@@ -200,9 +208,7 @@ export default function HorizontalBarChart({ feeders, records }) {
                     </span>
                 </div>
                 {isMobile && feederData.length > 8 && (
-                    <span className="text-[10px] text-gray-400">
-                        + {feederData.length - 8} more
-                    </span>
+                    <span className="text-[10px] text-gray-400">+ {feederData.length - 8} more</span>
                 )}
             </div>
         </div>
