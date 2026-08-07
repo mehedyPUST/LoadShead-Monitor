@@ -63,7 +63,7 @@ export default function Navbar() {
                                 WZPDCL, Kushtia
                             </span>
                             <span className="text-[10px] text-emerald-300/90 block leading-tight">
-                                Interruption Report
+                                Interruption Tracker
                             </span>
                         </div>
 
@@ -91,8 +91,8 @@ export default function Navbar() {
                                     <Link
                                         href={link.href}
                                         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${active
-                                                ? 'bg-emerald-800/70 text-emerald-100 shadow-sm'
-                                                : 'text-emerald-100/80 hover:bg-emerald-900/60 hover:text-white'
+                                            ? 'bg-emerald-800/70 text-emerald-100 shadow-sm'
+                                            : 'text-emerald-100/80 hover:bg-emerald-900/60 hover:text-white'
                                             }`}
                                     >
                                         {Icon && <Icon size={18} />}
@@ -153,8 +153,8 @@ export default function Navbar() {
                                     href={link.href}
                                     onClick={() => setMenuOpen(false)}
                                     className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active
-                                            ? 'bg-emerald-800/70 text-emerald-100'
-                                            : 'text-emerald-100/80 hover:bg-emerald-900/50 hover:text-white'
+                                        ? 'bg-emerald-800/70 text-emerald-100'
+                                        : 'text-emerald-100/80 hover:bg-emerald-900/50 hover:text-white'
                                         }`}
                                 >
                                     {link.label}
