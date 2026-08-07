@@ -11,7 +11,7 @@ const Spinner = ({
     fullScreen = true,
 }) => {
     const [isClient, setIsClient] = useState(false);
-    const [size, setSize] = useState(20);
+    const [size, setSize] = useState(12);
 
     useEffect(() => {
         setIsClient(true);
@@ -21,17 +21,21 @@ const Spinner = ({
             return;
         }
 
-        const getSize = () => {
-            const w = window.innerWidth;
-            if (w < 640) return 20;
-            if (w < 1024) return 28;
-            return 36;
+        const getResponsiveSize = () => {
+            const width = window.innerWidth;
+
+            if (width < 640) return 12;   // mobile → small & compact
+            if (width < 768) return 16;   // sm
+            if (width < 1024) return 20;  // md
+            if (width < 1280) return 24;  // lg
+            return 28;                    // xl and above
         };
 
-        setSize(getSize());
+        setSize(getResponsiveSize());
 
-        const handleResize = () => setSize(getSize());
+        const handleResize = () => setSize(getResponsiveSize());
         window.addEventListener('resize', handleResize);
+
         return () => window.removeEventListener('resize', handleResize);
     }, [propSize]);
 
@@ -48,12 +52,10 @@ const Spinner = ({
         </div>
     );
 
-    if (!fullScreen) {
-        return content;
-    }
+    if (!fullScreen) return content;
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
             {content}
         </div>
     );

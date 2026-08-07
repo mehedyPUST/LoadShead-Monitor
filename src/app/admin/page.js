@@ -256,7 +256,7 @@ export default function AdminDashboard() {
         return (
             <Layout>
                 <div className="flex justify-center items-center h-64">
-                    <Spinner size={48} />
+                    <Spinner />
                 </div>
             </Layout>
         );
@@ -311,8 +311,8 @@ export default function AdminDashboard() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         className={`p-4 rounded-xl mb-6 flex items-center justify-between border ${message.type === 'success'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-red-50 text-red-700 border-red-200'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-red-50 text-red-700 border-red-200'
                             }`}
                     >
                         <span className="flex items-center gap-2 text-sm font-medium">

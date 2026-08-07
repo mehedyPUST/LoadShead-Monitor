@@ -241,7 +241,7 @@ export default function SubstationPage() {
         return (
             <Layout>
                 <div className="flex justify-center items-center h-64">
-                    <Spinner size={48} />
+                    <Spinner />
                 </div>
             </Layout>
         );

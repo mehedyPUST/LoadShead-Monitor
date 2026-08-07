@@ -248,7 +248,7 @@ export default function AllFeedersPage() {
         return (
             <Layout>
                 <div className="flex justify-center items-center h-64">
-                    <Spinner size={48} />
+                    <Spinner />
                 </div>
             </Layout>
         );
@@ -369,8 +369,8 @@ export default function AllFeedersPage() {
                                 {/* Substation Header */}
                                 <div
                                     className={`px-3 sm:px-4 py-2.5 border-b flex justify-between items-center gap-2 ${group.hasLive
-                                            ? 'bg-gradient-to-r from-red-50 to-red-50/40 border-red-100'
-                                            : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
+                                        ? 'bg-gradient-to-r from-red-50 to-red-50/40 border-red-100'
+                                        : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
                                         }`}
                                 >
                                     <div className="flex items-center gap-2 min-w-0">
@@ -484,8 +484,8 @@ export default function AllFeedersPage() {
                                                                     key={ev.id}
                                                                     title={tooltip}
                                                                     className={`text-[9px] px-2 py-0.5 rounded-full font-medium truncate max-w-[140px] ${ev.isLive
-                                                                            ? 'bg-red-100 text-red-600 border border-red-200'
-                                                                            : 'bg-gray-100 text-gray-600'
+                                                                        ? 'bg-red-100 text-red-600 border border-red-200'
+                                                                        : 'bg-gray-100 text-gray-600'
                                                                         }`}
                                                                     style={
                                                                         !ev.isLive
