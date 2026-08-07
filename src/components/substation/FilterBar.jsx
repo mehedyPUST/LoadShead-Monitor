@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { Calendar, CalendarDays, Radio } from 'lucide-react';
 
 export default function FilterBar({ activeFilter, onFilterChange, filterLabel = '' }) {
     const [showCustomDate, setShowCustomDate] = useState(false);
@@ -15,7 +16,7 @@ export default function FilterBar({ activeFilter, onFilterChange, filterLabel = 
     const monthPickerRef = useRef(null);
 
     const filters = [
-        { id: 'live', label: '🔴 LIVE' },
+        { id: 'live', label: 'LIVE', icon: Radio },
         { id: 'today', label: 'Today' },
         { id: 'yesterday', label: 'Yesterday' },
         { id: 'last7days', label: '7 Days' },
@@ -103,58 +104,124 @@ export default function FilterBar({ activeFilter, onFilterChange, filterLabel = 
                 {filters.map((filter) => {
                     const isActive = activeFilter === filter.id && !showCustomDate && !showCustomMonth;
                     const isLive = filter.id === 'live';
+                    const Icon = filter.icon;
+
                     return (
                         <button
                             key={filter.id}
                             onClick={() => handleFilterClick(filter.id)}
-                            className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${isActive
-                                ? isLive
-                                    ? 'bg-red-600 text-white shadow-md animate-pulse'
-                                    : 'bg-emerald-600 text-white shadow-md'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${isActive
+                                    ? isLive
+                                        ? 'bg-red-600 text-white shadow-md animate-pulse'
+                                        : 'bg-emerald-600 text-white shadow-md'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
                         >
+                            {Icon && <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
                             {filter.label}
                         </button>
                     );
                 })}
+
+                {/* Custom Date */}
                 <div className="relative" ref={datePickerRef}>
                     <button
                         onClick={() => { setShowCustomDate(!showCustomDate); setShowCustomMonth(false); }}
-                        className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${activeFilter === 'customDate' ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${activeFilter === 'customDate'
+                                ? 'bg-emerald-600 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                     >
-                        📅 Custom
+                        <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        Custom Range
                     </button>
                     {showCustomDate && (
-                        <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl p-4 z-10 w-72 border border-gray-200">
+                        <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl p-4 z-20 w-72 border border-gray-200">
                             <div className="space-y-3">
-                                <div><label className="block text-xs font-medium text-gray-600 mb-1">Start (DD/MM/YYYY)</label><input type="text" value={startDisplay} onChange={(e) => handleStartChange(e.target.value)} placeholder="01082026" maxLength={10} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono" /></div>
-                                <div><label className="block text-xs font-medium text-gray-600 mb-1">End (DD/MM/YYYY)</label><input type="text" value={endDisplay} onChange={(e) => handleEndChange(e.target.value)} placeholder="15082026" maxLength={10} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono" /></div>
-                                <button onClick={handleCustomDateApply} disabled={!startDate || !endDate} className="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition disabled:opacity-50">Apply</button>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Start (DD/MM/YYYY)</label>
+                                    <input
+                                        type="text"
+                                        value={startDisplay}
+                                        onChange={(e) => handleStartChange(e.target.value)}
+                                        placeholder="01082026"
+                                        maxLength={10}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">End (DD/MM/YYYY)</label>
+                                    <input
+                                        type="text"
+                                        value={endDisplay}
+                                        onChange={(e) => handleEndChange(e.target.value)}
+                                        placeholder="15082026"
+                                        maxLength={10}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-mono"
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleCustomDateApply}
+                                    disabled={!startDate || !endDate}
+                                    className="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition disabled:opacity-50"
+                                >
+                                    Apply Range
+                                </button>
                             </div>
                         </div>
                     )}
                 </div>
+
+                {/* Custom Month */}
                 <div className="relative" ref={monthPickerRef}>
                     <button
                         onClick={() => { setShowCustomMonth(!showCustomMonth); setShowCustomDate(false); }}
-                        className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${activeFilter === 'customMonth' ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${activeFilter === 'customMonth'
+                                ? 'bg-emerald-600 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                     >
-                        📆 Month
+                        <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        Select Month
                     </button>
                     {showCustomMonth && (
-                        <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl p-4 z-10 w-56 border border-gray-200">
+                        <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-xl p-4 z-20 w-56 border border-gray-200">
                             <div className="space-y-3">
-                                <div><label className="block text-xs font-medium text-gray-600 mb-1">Month</label><select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"><option value="">Select</option>{monthOptions.map((m) => <option key={m} value={m}>{m}</option>)}</select></div>
-                                <div><label className="block text-xs font-medium text-gray-600 mb-1">Year</label><select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"><option value="">Select</option>{yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}</select></div>
-                                <button onClick={handleCustomMonthApply} disabled={!selectedMonth || !selectedYear} className="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition disabled:opacity-50">Apply</button>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Month</label>
+                                    <select
+                                        value={selectedMonth}
+                                        onChange={(e) => setSelectedMonth(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                                    >
+                                        <option value="">Select</option>
+                                        {monthOptions.map((m) => <option key={m} value={m}>{m}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Year</label>
+                                    <select
+                                        value={selectedYear}
+                                        onChange={(e) => setSelectedYear(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                                    >
+                                        <option value="">Select</option>
+                                        {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+                                    </select>
+                                </div>
+                                <button
+                                    onClick={handleCustomMonthApply}
+                                    disabled={!selectedMonth || !selectedYear}
+                                    className="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition disabled:opacity-50"
+                                >
+                                    Apply Month
+                                </button>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
+
             {filterLabel && (
                 <div className="text-xs sm:text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-1.5 inline-block border border-gray-200">
                     {filterLabel}

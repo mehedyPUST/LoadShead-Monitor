@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { Building2, Zap, ArrowRight } from 'lucide-react';
 import Layout from '@/components/common/Layout';
 import StatsCards from '@/components/dashboard/StatsCards';
 import SubstationCard from '@/components/dashboard/SubstationCard';
@@ -65,22 +66,19 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
 
-    // Initial fetch
     setIsLoading(true);
     fetchData();
 
-    // Start 60-second interval
     intervalRef.current = setInterval(() => {
       if (isVisibleRef.current) {
         fetchData();
       }
-    }, 60000); // 60 seconds
+    }, 60000);
 
-    // Refresh when tab becomes visible again
     const handleVisibility = () => {
       isVisibleRef.current = document.visibilityState === 'visible';
       if (document.visibilityState === 'visible') {
-        fetchData(); // Immediate refresh when user returns
+        fetchData();
       }
     };
 
@@ -111,33 +109,67 @@ export default function Dashboard() {
     );
   }
 
-  if (error) return <Layout><div className="text-red-500">Error: {error}</div></Layout>;
+  if (error) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <p className="text-red-600 font-medium mb-1">Failed to load dashboard</p>
+            <p className="text-sm text-gray-500">{error}</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
+      {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">🏢 Substations Overview</h1>
-        <p className="text-sm text-gray-500">Monitor your substations and their loadshed activities</p>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700">
+            <Building2 size={22} strokeWidth={2} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+              Substations Overview
+            </h1>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Monitor substations and loadshed activities in real time
+            </p>
+          </div>
+        </div>
       </div>
+
       <StatsCards stats={stats} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {/* Substation Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-2">
         {substationCards}
 
-        {/* "View All Feeders" Card */}
+        {/* View All Feeders Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: substations.length * 0.08 }}
           whileHover={{ y: -4, transition: { duration: 0.2 } }}
-          className="card overflow-hidden hover:shadow-lg cursor-pointer border-2 border-dashed border-emerald-300 bg-emerald-50/30"
+          className="group relative overflow-hidden rounded-xl border-2 border-dashed border-emerald-300/80 bg-gradient-to-br from-emerald-50/80 to-white cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all duration-200"
           onClick={() => router.push('/feeders')}
         >
-          <div className="p-5 flex flex-col items-center justify-center text-center h-full min-h-[120px]">
-            <span className="text-3xl mb-2">⚡</span>
-            <h3 className="text-base font-semibold text-emerald-700">View All Feeders</h3>
-            <p className="text-xs text-emerald-500 mt-1">See detailed event bars</p>
-            <p className="text-xs text-emerald-400 mt-1">{stats.totalFeeders || 0} feeders across all substations</p>
+          <div className="p-6 flex flex-col items-center justify-center text-center h-full min-h-[140px]">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 mb-3 group-hover:bg-emerald-200 transition-colors">
+              <Zap size={22} strokeWidth={2} />
+            </div>
+            <h3 className="text-base font-semibold text-emerald-800">
+              View All Feeders
+            </h3>
+            <p className="text-xs text-emerald-600/80 mt-1">
+              Detailed event timeline & duration bars
+            </p>
+            <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+              <span>{stats.totalFeeders || 0} feeders</span>
+              <ArrowRight size={14} className="opacity-70 group-hover:translate-x-0.5 transition-transform" />
+            </div>
           </div>
         </motion.div>
       </div>

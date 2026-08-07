@@ -5,6 +5,15 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
+import {
+    Zap,
+    Pencil,
+    Trash2,
+    Plus,
+    Square,
+    ClipboardList,
+    Radio
+} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/utils/api';
 
@@ -157,136 +166,166 @@ export default function FeederCard({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
                 onClick={goToFeederDetails}
-                className={`card overflow-hidden border-l-4 group cursor-pointer relative ${liveRecordData ? 'border-l-red-500' : 'border-l-emerald-500'
+                className={`group relative overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 border-l-4 ${liveRecordData ? 'border-l-red-500' : 'border-l-emerald-500'
                     }`}
             >
-                {/* Hover overlay: "Click for details" */}
+                {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10 pointer-events-none">
-                    <span className="text-sm font-medium text-gray-700 bg-white/80 px-3 py-1.5 rounded-full shadow-sm">
+                    <span className="text-sm font-medium text-gray-700 bg-white/90 px-3 py-1.5 rounded-full shadow-sm">
                         Click for details →
                     </span>
                 </div>
 
-                <div className="p-3 sm:p-4 relative z-0">
+                <div className="p-3.5 sm:p-4 relative z-0">
                     {/* Header */}
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2.5">
                         <div className="min-w-0 flex-1">
-                            <h3 className="text-sm sm:text-base font-semibold text-gray-800 flex items-center gap-1.5 flex-wrap">
-                                ⚡ <span className="truncate">{feeder.name}</span>
+                            <h3 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
+                                <Zap size={16} className="text-emerald-600 shrink-0" />
+                                <span className="truncate">{feeder.name}</span>
+
                                 {liveRecordData && (
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-700 animate-pulse">
-                                        <span className="w-1 h-1 rounded-full bg-red-500"></span>LIVE
+                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-50 text-red-600 border border-red-100 animate-pulse">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                        LIVE
                                     </span>
                                 )}
+
                                 {user?.role === 'admin' && (
                                     <span
-                                        className="inline-flex gap-1 ml-1 opacity-0 group-hover:opacity-100 transition"
+                                        className="inline-flex items-center gap-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setIsEditFeederModalOpen(true); }}
-                                            className="text-blue-500 hover:text-blue-700 text-xs"
+                                            className="p-1 rounded text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
                                             title="Edit Feeder"
                                         >
-                                            ✏️
+                                            <Pencil size={13} />
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleDeleteFeeder(); }}
-                                            className="text-red-500 hover:text-red-700 text-xs"
+                                            className="p-1 rounded text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
                                             title="Delete Feeder"
                                         >
-                                            🗑️
+                                            <Trash2 size={13} />
                                         </button>
                                     </span>
                                 )}
                             </h3>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                Total: <span className="font-bold text-red-600">{totalDuration}m</span> · Events:{' '}
-                                <span className="font-bold">{eventCount}</span>
+
+                            <p className="text-xs text-gray-500 mt-1">
+                                Total:{' '}
+                                <span className="font-semibold text-red-600 tabular-nums">{totalDuration}m</span>
+                                {' · '}Events:{' '}
+                                <span className="font-semibold tabular-nums">{eventCount}</span>
                                 {liveRecordData && (
-                                    <span className="ml-1 text-red-600 text-[10px]">
+                                    <span className="ml-1.5 text-red-600 text-[11px]">
                                         · {liveDuration}m ago
                                     </span>
                                 )}
                             </p>
                         </div>
+
+                        {/* Action buttons */}
                         <div className="flex gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                             {canAdd && !liveRecordData && (
                                 <>
-                                    <button onClick={() => setIsAddModalOpen(true)} className="btn-primary text-xs px-2.5 py-1.5">
-                                        ➕ Add
+                                    <button
+                                        onClick={() => setIsAddModalOpen(true)}
+                                        className="inline-flex items-center gap-1 text-xs font-medium bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors"
+                                    >
+                                        <Plus size={13} />
+                                        Add
                                     </button>
                                     <button
                                         onClick={() => setIsLiveModalOpen(true)}
-                                        className="bg-red-600 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium hover:bg-red-700 transition flex items-center gap-1"
+                                        className="inline-flex items-center gap-1.5 bg-red-600 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium hover:bg-red-700 transition-colors"
                                     >
-                                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>Live
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                        Live
                                     </button>
                                 </>
                             )}
                             {canAdd && liveRecordData && (
                                 <button
                                     onClick={() => openWithdrawModal(liveRecordData)}
-                                    className="bg-yellow-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium hover:bg-yellow-600 transition"
+                                    className="inline-flex items-center gap-1.5 bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium hover:bg-amber-600 transition-colors"
                                 >
-                                    ⏹️ Withdraw
+                                    <Square size={12} />
+                                    Withdraw
                                 </button>
                             )}
                             <Link
                                 href={`/feeder/${feeder.id}`}
-                                className="btn-secondary text-xs px-2.5 py-1.5"
+                                className="inline-flex items-center justify-center p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
                                 onClick={(e) => e.stopPropagation()}
+                                title="View details"
                             >
-                                📋
+                                <ClipboardList size={14} />
                             </Link>
                         </div>
                     </div>
 
-                    {/* Bar */}
-                    <div className="mt-3">
-                        <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+                    {/* Progress Bar */}
+                    <div className="mt-3.5">
+                        <div className="flex justify-between text-[10px] text-gray-500 mb-1.5">
                             <span>Loadshed</span>
-                            <span className={liveRecordData ? 'text-red-600 font-medium' : ''}>
+                            <span className={`tabular-nums ${liveRecordData ? 'text-red-600 font-medium' : ''}`}>
                                 {totalDuration}m{liveRecordData && ' ↑'}
                             </span>
                         </div>
-                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${percentage}%` }}
                                 transition={{ duration: liveRecordData ? 0.3 : 0.8 }}
                                 className={`h-full rounded-full ${getBarColor()} ${liveRecordData ? 'animate-pulse' : ''}`}
-                                style={liveRecordData ? { boxShadow: '0 0 8px rgba(239,68,68,0.5)' } : {}}
+                                style={liveRecordData ? { boxShadow: '0 0 8px rgba(239,68,68,0.45)' } : {}}
                             />
                         </div>
                     </div>
 
                     {/* Events list */}
                     {records.length > 0 && (
-                        <div className="mt-2 space-y-1">
+                        <div className="mt-3 space-y-1.5">
                             {records.map((rec, idx) => (
                                 <div
                                     key={rec.id}
-                                    className={`text-xs bg-gray-50 p-1.5 rounded flex justify-between items-center group/item ${rec.isLive ? 'border-l-4 border-red-500 bg-red-50/50' : ''
+                                    className={`text-xs bg-gray-50/80 px-2.5 py-1.5 rounded-lg flex justify-between items-center group/item ${rec.isLive ? 'border-l-[3px] border-red-500 bg-red-50/40' : ''
                                         }`}
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    <span className="truncate">
-                                        {rec.isLive ? '🔴' : `#${idx + 1}`}{' '}
+                                    <span className="truncate flex items-center gap-1.5">
+                                        {rec.isLive ? (
+                                            <Radio size={12} className="text-red-500 shrink-0" />
+                                        ) : (
+                                            <span className="text-gray-400 font-medium">#{idx + 1}</span>
+                                        )}
                                         {formatEventDateTime(rec.startTime)} →{' '}
                                         {rec.isLive ? `LIVE (${liveDuration}m)` : formatEventDateTime(rec.endTime)}
                                     </span>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className={`font-bold ${rec.isLive ? 'text-red-600 animate-pulse' : 'text-red-600'}`}>
+
+                                    <div className="flex items-center gap-2">
+                                        <span className={`font-semibold tabular-nums ${rec.isLive ? 'text-red-600 animate-pulse' : 'text-red-600'}`}>
                                             {rec.isLive ? `${liveDuration}m` : `${rec.duration}m`}
                                         </span>
+
                                         {canEdit && !rec.isLive && (
-                                            <div className="flex gap-1 opacity-0 group-hover/item:opacity-100">
-                                                <button onClick={() => openEditModal(rec)} className="text-blue-500 hover:text-blue-700 text-xs">
-                                                    ✏️
+                                            <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => openEditModal(rec)}
+                                                    className="p-1 rounded text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <Pencil size={12} />
                                                 </button>
-                                                <button onClick={() => handleDelete(rec.id)} className="text-red-500 hover:text-red-700 text-xs">
-                                                    🗑️
+                                                <button
+                                                    onClick={() => handleDelete(rec.id)}
+                                                    className="p-1 rounded text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={12} />
                                                 </button>
                                             </div>
                                         )}

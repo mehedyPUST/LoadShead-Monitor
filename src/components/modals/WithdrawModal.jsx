@@ -2,6 +2,18 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Square,
+    X,
+    AlertTriangle,
+    Building2,
+    Zap,
+    Clock,
+    CheckCircle2,
+    Lightbulb,
+    Pencil,
+    Radio
+} from 'lucide-react';
 import { api, apiCall } from '@/utils/api';
 
 export default function WithdrawModal({
@@ -61,7 +73,6 @@ export default function WithdrawModal({
         return `${day}/${month} ${time}`;
     };
 
-    // Set current time when modal opens
     useEffect(() => {
         if (isOpen) {
             const now = new Date();
@@ -210,54 +221,67 @@ export default function WithdrawModal({
     if (!isOpen) return null;
     const modalKey = `withdraw-modal-${feeder?.id || 'wd'}`;
 
+    const inputCls = "w-12 px-2 py-2 border border-gray-200 rounded-lg text-center font-mono text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 outline-none transition bg-gray-50/50 hover:bg-white";
+    const yearCls = "w-20 px-2 py-2 border border-gray-200 rounded-lg text-center font-mono text-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 outline-none transition bg-gray-50/50 hover:bg-white";
+
     return (
         <>
             <AnimatePresence>
                 {isOpen && (
-                    <div key={modalKey} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div key={modalKey} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
+                            initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto"
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto"
                         >
+                            {/* Header */}
                             <div className="flex justify-between items-center mb-5">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-full bg-yellow-100 flex items-center justify-center">
-                                        <span className="text-yellow-600 text-lg">⏹️</span>
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 text-amber-600">
+                                        <Square size={18} />
                                     </div>
-                                    <h2 className="text-xl font-semibold text-gray-800">Withdraw Live Loadshed</h2>
+                                    <h2 className="text-lg font-semibold text-gray-900">
+                                        Withdraw Live Loadshed
+                                    </h2>
                                 </div>
                                 <button
                                     onClick={onClose}
-                                    className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition"
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                                 >
-                                    <span className="text-2xl">×</span>
+                                    <X size={18} />
                                 </button>
                             </div>
 
-                            <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-yellow-100/50 rounded-xl border border-yellow-200/60">
+                            {/* Info Card */}
+                            <div className="mb-5 p-4 bg-gradient-to-r from-amber-50 to-amber-100/40 rounded-xl border border-amber-100">
                                 <div className="flex items-center justify-between flex-wrap gap-2">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-700">🏭 {substation?.name}</p>
-                                        <p className="text-sm text-gray-600">⚡ {feeder?.name}</p>
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                                            <Building2 size={14} className="text-gray-400" />
+                                            {substation?.name}
+                                        </p>
+                                        <p className="text-sm text-gray-600 flex items-center gap-1.5">
+                                            <Zap size={14} className="text-amber-500" />
+                                            {feeder?.name}
+                                        </p>
                                     </div>
-                                    <div className="flex gap-1.5">
-                                        <span className="text-xs bg-red-200/70 text-red-700 px-2.5 py-1 rounded-full font-medium animate-pulse">
-                                            🔴 LIVE
-                                        </span>
-                                    </div>
+                                    <span className="inline-flex items-center gap-1.5 text-xs bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-medium animate-pulse">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                        LIVE
+                                    </span>
                                 </div>
                                 {record && (
-                                    <p className="text-xs text-gray-500 mt-2">
+                                    <p className="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
+                                        <Clock size={12} />
                                         Started: {formatEventDateTime(record.startTime)}
                                     </p>
                                 )}
                             </div>
 
                             {error && (
-                                <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-sm mb-4 flex items-start gap-2.5">
-                                    <span className="text-lg">⚠️</span>
+                                <div className="bg-red-50 border border-red-100 text-red-700 p-3 rounded-xl text-sm mb-4 flex items-start gap-2">
+                                    <AlertTriangle size={15} className="mt-0.5 shrink-0" />
                                     <span>{error}</span>
                                 </div>
                             )}
@@ -276,9 +300,9 @@ export default function WithdrawModal({
                                             onChange={(e) => handleDateSegment('end', 'day', e.target.value, endMonthRef)}
                                             onFocus={(e) => e.target.select()}
                                             placeholder="DD"
-                                            className="w-12 px-2 py-2 border border-gray-200 rounded-lg text-center font-mono text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition bg-gray-50/50 hover:bg-white"
+                                            className={inputCls}
                                         />
-                                        <span className="text-lg font-medium text-gray-400 select-none">/</span>
+                                        <span className="text-lg font-medium text-gray-300 select-none">/</span>
                                         <input
                                             ref={endMonthRef}
                                             type="text"
@@ -288,9 +312,9 @@ export default function WithdrawModal({
                                             onChange={(e) => handleDateSegment('end', 'month', e.target.value, endYearRef)}
                                             onFocus={(e) => e.target.select()}
                                             placeholder="MM"
-                                            className="w-12 px-2 py-2 border border-gray-200 rounded-lg text-center font-mono text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition bg-gray-50/50 hover:bg-white"
+                                            className={inputCls}
                                         />
-                                        <span className="text-lg font-medium text-gray-400 select-none">/</span>
+                                        <span className="text-lg font-medium text-gray-300 select-none">/</span>
                                         <input
                                             ref={endYearRef}
                                             type="text"
@@ -300,11 +324,13 @@ export default function WithdrawModal({
                                             onChange={(e) => handleDateSegment('end', 'year', e.target.value, null)}
                                             onFocus={(e) => e.target.select()}
                                             placeholder="YYYY"
-                                            className="w-20 px-2 py-2 border border-gray-200 rounded-lg text-center font-mono text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition bg-gray-50/50 hover:bg-white"
+                                            className={yearCls}
                                         />
                                     </div>
-                                    <p className="text-xs text-gray-400 mt-1.5">
-                                        {formData.endDate ? `✅ ${toNamedDate(formData.endDate)}` : 'DD / MM / YYYY'}
+                                    <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+                                        {formData.endDate ? (
+                                            <><CheckCircle2 size={11} className="text-amber-500" /> {toNamedDate(formData.endDate)}</>
+                                        ) : 'DD / MM / YYYY'}
                                     </p>
                                 </div>
 
@@ -322,9 +348,9 @@ export default function WithdrawModal({
                                             onBlur={(e) => handleTimeSegment('endTime', 'hour', normalize(e.target.value, 23), null)}
                                             onFocus={(e) => e.target.select()}
                                             placeholder="HH"
-                                            className="w-12 px-2 py-2 border border-gray-200 rounded-lg text-center font-mono text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition bg-gray-50/50 hover:bg-white"
+                                            className={inputCls}
                                         />
-                                        <span className="text-lg font-medium text-gray-400 select-none">:</span>
+                                        <span className="text-lg font-medium text-gray-300 select-none">:</span>
                                         <input
                                             ref={endMinuteRef}
                                             type="text"
@@ -335,7 +361,7 @@ export default function WithdrawModal({
                                             onBlur={(e) => handleTimeSegment('endTime', 'minute', normalize(e.target.value, 59), null)}
                                             onFocus={(e) => e.target.select()}
                                             placeholder="MM"
-                                            className="w-12 px-2 py-2 border border-gray-200 rounded-lg text-center font-mono text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition bg-gray-50/50 hover:bg-white"
+                                            className={inputCls}
                                         />
                                     </div>
                                     <p className="text-xs text-gray-400 mt-1.5">24h (e.g., 14:30)</p>
@@ -367,9 +393,11 @@ export default function WithdrawModal({
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="bg-yellow-500 text-white flex-1 py-2 rounded-lg font-medium hover:bg-yellow-600 transition disabled:opacity-50"
+                                        className="flex-1 inline-flex items-center justify-center gap-1.5 bg-amber-500 text-white py-2.5 rounded-xl font-medium hover:bg-amber-600 transition disabled:opacity-50"
                                     >
-                                        {loading ? 'Withdrawing...' : '⏹️ Withdraw Live'}
+                                        {loading ? 'Withdrawing...' : (
+                                            <><Square size={14} /> Withdraw Live</>
+                                        )}
                                     </button>
                                 </div>
                             </form>
@@ -378,46 +406,58 @@ export default function WithdrawModal({
                 )}
             </AnimatePresence>
 
-            {/* Overlap Alert Modal */}
+            {/* Overlap Modal */}
             {overlapError && (
                 <AnimatePresence>
                     {showOverlapModal && (
-                        <div key={`overlap-modal-${feeder?.id || 'ov'}`} className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <div key={`overlap-modal-${feeder?.id || 'ov'}`} className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
+                                initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6"
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
                             >
                                 <div className="text-center mb-4">
-                                    <div className="text-5xl mb-3">⚠️</div>
-                                    <h2 className="text-xl font-bold text-red-600">Overlapping Time Period!</h2>
-                                    <p className="text-gray-600 mt-2">
+                                    <div className="flex items-center justify-center w-14 h-14 rounded-full bg-red-50 text-red-500 mx-auto mb-3">
+                                        <AlertTriangle size={28} />
+                                    </div>
+                                    <h2 className="text-lg font-bold text-red-600">Overlapping Time Period</h2>
+                                    <p className="text-gray-600 mt-2 text-sm">
                                         This time period overlaps with an existing loadshed record for <strong>{feeder?.name}</strong>.
                                     </p>
                                 </div>
-                                <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-                                    <p className="text-sm text-red-700 font-medium">Existing Record:</p>
-                                    <p className="text-sm text-red-600 mt-1">
-                                        🕐 {overlapError.overlappingRecord
+
+                                <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-4">
+                                    <p className="text-sm text-red-700 font-medium">Existing Record</p>
+                                    <p className="text-sm text-red-600 mt-1 flex items-center gap-1.5">
+                                        <Clock size={13} />
+                                        {overlapError.overlappingRecord
                                             ? new Date(overlapError.overlappingRecord.startTime).toLocaleString('en-GB')
-                                            : 'Unknown'} → {overlapError.overlappingRecord
-                                                ? new Date(overlapError.overlappingRecord.endTime).toLocaleString('en-GB')
-                                                : 'Unknown'}
+                                            : 'Unknown'}
+                                        {' → '}
+                                        {overlapError.overlappingRecord
+                                            ? new Date(overlapError.overlappingRecord.endTime).toLocaleString('en-GB')
+                                            : 'Unknown'}
                                     </p>
-                                    <p className="text-sm text-red-600">
-                                        ⏱️ Duration: {overlapError.overlappingRecord?.duration || 0} minutes
+                                    <p className="text-sm text-red-600 mt-0.5">
+                                        Duration: {overlapError.overlappingRecord?.duration || 0} minutes
                                     </p>
                                 </div>
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4">
-                                    <p className="text-sm text-yellow-700">💡 Please adjust the end time to avoid overlap.</p>
+
+                                <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 mb-4 flex items-start gap-2">
+                                    <Lightbulb size={15} className="text-amber-600 mt-0.5 shrink-0" />
+                                    <p className="text-sm text-amber-700">
+                                        Please adjust the end time to avoid overlap.
+                                    </p>
                                 </div>
+
                                 <div className="flex gap-3">
                                     <button
                                         onClick={() => { setShowOverlapModal(false); setOverlapError(null); }}
-                                        className="btn-primary flex-1"
+                                        className="btn-primary flex-1 inline-flex items-center justify-center gap-1.5"
                                     >
-                                        ✏️ Adjust Time
+                                        <Pencil size={14} />
+                                        Adjust Time
                                     </button>
                                     <button
                                         onClick={() => { setShowOverlapModal(false); setOverlapError(null); onClose(); }}

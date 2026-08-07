@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Pencil, X, AlertTriangle, Check } from 'lucide-react';
 import { api } from '@/utils/api';
 
 export default function EditFeederModal({
@@ -81,38 +82,43 @@ export default function EditFeederModal({
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6"
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
                     >
+                        {/* Header */}
                         <div className="flex justify-between items-center mb-5">
                             <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <span className="text-blue-600 text-lg">✏️</span>
+                                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-100 text-blue-600">
+                                    <Pencil size={18} />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-semibold text-gray-800">Edit Feeder</h2>
+                                    <h2 className="text-lg font-semibold text-gray-900">
+                                        Edit Feeder
+                                    </h2>
                                     <p className="text-xs text-gray-500">{feeder.name}</p>
                                 </div>
                             </div>
                             <button
                                 onClick={onClose}
-                                className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition"
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                             >
-                                <span className="text-2xl">×</span>
+                                <X size={18} />
                             </button>
                         </div>
 
+                        {/* Error */}
                         {error && (
-                            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-sm mb-4 flex items-start gap-2">
-                                <span>⚠️</span>
+                            <div className="bg-red-50 border border-red-100 text-red-700 p-3 rounded-xl text-sm mb-4 flex items-start gap-2">
+                                <AlertTriangle size={15} className="mt-0.5 shrink-0" />
                                 <span>{error}</span>
                             </div>
                         )}
 
+                        {/* Form */}
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -179,9 +185,16 @@ export default function EditFeederModal({
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="btn-primary flex-1"
+                                    className="btn-primary flex-1 inline-flex items-center justify-center gap-1.5"
                                 >
-                                    {loading ? 'Saving...' : '💾 Save Changes'}
+                                    {loading ? (
+                                        'Saving...'
+                                    ) : (
+                                        <>
+                                            <Check size={15} />
+                                            Save Changes
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </form>
