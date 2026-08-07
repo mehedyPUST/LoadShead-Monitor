@@ -97,10 +97,10 @@ export default function FeederCard({
         router.push(`/feeder/${feeder.id}`);
     }, [router, feeder.id]);
 
+    // ✅ FIX: Only refresh data – DO NOT close modal automatically
     const handleRecordAdded = useCallback(async () => {
         if (onRecordAdded) await onRecordAdded();
-        setIsAddModalOpen(false);
-        setIsLiveModalOpen(false);
+        // Modal stays open – user closes manually via Cancel or ✕
     }, [onRecordAdded]);
 
     const handleRecordUpdated = useCallback(async () => {
@@ -176,7 +176,7 @@ export default function FeederCard({
                 onClick={goToFeederDetails}
                 className="group relative rounded-xl overflow-hidden cursor-pointer"
             >
-                {/* Always visible alternating border */}
+                {/* alternating border (same as before) */}
                 <div
                     className={`absolute inset-0 rounded-xl ${isEven
                             ? 'bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-400'
@@ -190,9 +190,8 @@ export default function FeederCard({
                         }`}
                 />
 
-                {/* Card content */}
                 <div className="relative m-[1.5px] rounded-[10px] bg-white border border-gray-100/80 shadow-sm">
-                    {/* Hover overlay */}
+                    {/* hover overlay */}
                     <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10 pointer-events-none">
                         <span className="text-sm font-medium text-gray-700 bg-white/90 px-3 py-1.5 rounded-full shadow-sm">
                             Click for details →
@@ -200,9 +199,8 @@ export default function FeederCard({
                     </div>
 
                     <div className="p-3.5 sm:p-4 relative z-0">
-                        {/* Header - always top-right Details button on mobile */}
+                        {/* header */}
                         <div className="flex justify-between items-start gap-2">
-                            {/* Left: Title + stats */}
                             <div className="min-w-0 flex-1">
                                 <h3 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
                                     <Zap
@@ -258,12 +256,10 @@ export default function FeederCard({
                                 </p>
                             </div>
 
-                            {/* Right: Actions (Details always top-right on mobile) */}
                             <div
                                 className="flex items-center gap-1.5 flex-shrink-0"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                {/* Mobile Details button - top right */}
                                 <Link
                                     href={`/feeder/${feeder.id}`}
                                     className={`sm:hidden inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${isEven
@@ -304,7 +300,6 @@ export default function FeederCard({
                                     </button>
                                 )}
 
-                                {/* Desktop details icon */}
                                 <Link
                                     href={`/feeder/${feeder.id}`}
                                     className="hidden sm:inline-flex items-center justify-center p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
