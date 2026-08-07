@@ -3,10 +3,14 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { memo } from 'react';
-import { Building2, MapPin, ChevronRight } from 'lucide-react';
+import { Building2, MapPin, ChevronRight, Eye } from 'lucide-react';
 
 const SubstationCard = memo(({ substation, index }) => {
     const isEven = index % 2 === 0;
+
+    const badgeClass = isEven
+        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+        : 'bg-purple-50 text-purple-700 border-purple-100';
 
     return (
         <motion.div
@@ -32,10 +36,17 @@ const SubstationCard = memo(({ substation, index }) => {
                     }`}
             />
 
-            {/* Card content - clean white, no filled bg */}
+            {/* Card content */}
             <div className="relative m-[1.5px] rounded-[10px] bg-white border border-gray-100/80">
+                {/* Desktop hover overlay */}
+                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:flex items-center justify-center z-10 pointer-events-none">
+                    <span className="text-sm font-medium text-gray-700 bg-white/90 px-3 py-1.5 rounded-full shadow-sm">
+                        Click to Visit
+                    </span>
+                </div>
+
                 <Link href={`/substation/${substation.id}`} className="block">
-                    <div className="p-5">
+                    <div className="p-5 relative z-0">
                         <div className="flex items-start gap-3">
                             {/* Icon */}
                             <div
@@ -57,28 +68,39 @@ const SubstationCard = memo(({ substation, index }) => {
                                         <p className="text-sm text-gray-500 mt-0.5">{substation.code}</p>
                                     </div>
 
+                                    {/* Feeders badge */}
                                     <span
-                                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 ${isEven
-                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                                                : 'bg-purple-50 text-purple-700 border-purple-100'
-                                            }`}
+                                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 ${badgeClass}`}
                                     >
                                         {substation.feederCount || 0} Feeders
                                     </span>
                                 </div>
 
-                                {substation.location && (
-                                    <div className="flex items-center gap-1.5 mt-2 text-sm text-gray-400">
-                                        <MapPin size={13} className="shrink-0" />
-                                        <span className="truncate">{substation.location}</span>
-                                    </div>
-                                )}
+                                {/* Location + Visit button */}
+                                <div className="flex items-center justify-between gap-2 mt-2">
+                                    {substation.location ? (
+                                        <div className="flex items-center gap-1.5 text-sm text-gray-400 min-w-0">
+                                            <MapPin size={13} className="shrink-0" />
+                                            <span className="truncate">{substation.location}</span>
+                                        </div>
+                                    ) : (
+                                        <div />
+                                    )}
+
+                                    {/* Mobile Visit button */}
+                                    <span
+                                        className={`sm:hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 ${badgeClass}`}
+                                    >
+                                        <Eye size={12} />
+                                        Visit
+                                    </span>
+                                </div>
                             </div>
 
-                            {/* Arrow */}
+                            {/* Desktop Arrow */}
                             <ChevronRight
                                 size={18}
-                                className={`text-gray-300 group-hover:translate-x-0.5 transition-all shrink-0 mt-1 ${isEven ? 'group-hover:text-emerald-500' : 'group-hover:text-purple-500'
+                                className={`hidden sm:block text-gray-300 group-hover:translate-x-0.5 transition-all shrink-0 mt-1 ${isEven ? 'group-hover:text-emerald-500' : 'group-hover:text-purple-500'
                                     }`}
                             />
                         </div>

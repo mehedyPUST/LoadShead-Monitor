@@ -12,7 +12,8 @@ import {
     Plus,
     Square,
     ClipboardList,
-    Radio
+    Radio,
+    ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/utils/api';
@@ -30,7 +31,7 @@ export default function FeederCard({
     substation,
     onRecordAdded,
     canAdd = false,
-    periodLabel = 'today'
+    periodLabel = 'today',
 }) {
     const router = useRouter();
     const { user } = useAuth();
@@ -44,10 +45,11 @@ export default function FeederCard({
     const [liveRecord, setLiveRecord] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeletingFeeder, setIsDeletingFeeder] = useState(false);
-
     const [liveDuration, setLiveDuration] = useState(0);
 
-    const liveRecordData = useMemo(() => records.find(r => r.isLive === true), [records]);
+    const isEven = index % 2 === 0;
+
+    const liveRecordData = useMemo(() => records.find((r) => r.isLive === true), [records]);
 
     useEffect(() => {
         if (liveRecordData) {
@@ -70,7 +72,10 @@ export default function FeederCard({
     );
 
     const eventCount = records.length;
-    const percentage = useMemo(() => (maxDuration > 0 ? (totalDuration / maxDuration) * 100 : 0), [totalDuration, maxDuration]);
+    const percentage = useMemo(
+        () => (maxDuration > 0 ? (totalDuration / maxDuration) * 100 : 0),
+        [totalDuration, maxDuration]
+    );
 
     const getBarColor = useCallback(() => {
         if (liveRecordData) return 'bg-red-500';
@@ -117,22 +122,25 @@ export default function FeederCard({
         setIsWithdrawModalOpen(true);
     }, []);
 
-    const handleDelete = useCallback(async (recordId) => {
-        if (!confirm('Are you sure you want to delete this loadshed record?')) return;
-        setIsDeleting(true);
-        try {
-            const response = await api.deleteRecord(recordId);
-            if (response.success) {
-                if (onRecordAdded) await onRecordAdded();
-            } else {
-                alert('Failed to delete record');
+    const handleDelete = useCallback(
+        async (recordId) => {
+            if (!confirm('Are you sure you want to delete this loadshed record?')) return;
+            setIsDeleting(true);
+            try {
+                const response = await api.deleteRecord(recordId);
+                if (response.success) {
+                    if (onRecordAdded) await onRecordAdded();
+                } else {
+                    alert('Failed to delete record');
+                }
+            } catch (error) {
+                alert('Error deleting record');
+            } finally {
+                setIsDeleting(false);
             }
-        } catch (error) {
-            alert('Error deleting record');
-        } finally {
-            setIsDeleting(false);
-        }
-    }, [onRecordAdded]);
+        },
+        [onRecordAdded]
+    );
 
     const handleDeleteFeeder = useCallback(async () => {
         if (!confirm(`Are you sure you want to delete feeder "${feeder.name}"? This action cannot be undone.`)) return;
@@ -166,177 +174,222 @@ export default function FeederCard({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
                 onClick={goToFeederDetails}
-                className={`group relative overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 border-l-4 ${liveRecordData ? 'border-l-red-500' : 'border-l-emerald-500'
-                    }`}
+                className="group relative rounded-xl overflow-hidden cursor-pointer"
             >
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10 pointer-events-none">
-                    <span className="text-sm font-medium text-gray-700 bg-white/90 px-3 py-1.5 rounded-full shadow-sm">
-                        Click for details →
-                    </span>
-                </div>
+                {/* Always visible alternating border */}
+                <div
+                    className={`absolute inset-0 rounded-xl ${isEven
+                            ? 'bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-400'
+                            : 'bg-gradient-to-r from-purple-400 via-violet-300 to-purple-500'
+                        } opacity-80`}
+                />
+                <div
+                    className={`absolute -inset-[1px] rounded-xl blur-[1.5px] opacity-40 ${isEven
+                            ? 'bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-400'
+                            : 'bg-gradient-to-r from-purple-400 via-violet-300 to-purple-500'
+                        }`}
+                />
 
-                <div className="p-3.5 sm:p-4 relative z-0">
-                    {/* Header */}
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2.5">
-                        <div className="min-w-0 flex-1">
-                            <h3 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
-                                <Zap size={16} className="text-emerald-600 shrink-0" />
-                                <span className="truncate">{feeder.name}</span>
+                {/* Card content */}
+                <div className="relative m-[1.5px] rounded-[10px] bg-white border border-gray-100/80 shadow-sm">
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10 pointer-events-none">
+                        <span className="text-sm font-medium text-gray-700 bg-white/90 px-3 py-1.5 rounded-full shadow-sm">
+                            Click for details →
+                        </span>
+                    </div>
 
-                                {liveRecordData && (
-                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-50 text-red-600 border border-red-100 animate-pulse">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                        LIVE
-                                    </span>
+                    <div className="p-3.5 sm:p-4 relative z-0">
+                        {/* Header - always top-right Details button on mobile */}
+                        <div className="flex justify-between items-start gap-2">
+                            {/* Left: Title + stats */}
+                            <div className="min-w-0 flex-1">
+                                <h3 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
+                                    <Zap
+                                        size={16}
+                                        className={`shrink-0 ${isEven ? 'text-emerald-600' : 'text-purple-600'}`}
+                                    />
+                                    <span className="truncate">{feeder.name}</span>
+
+                                    {liveRecordData && (
+                                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-50 text-red-600 border border-red-100 animate-pulse">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                            LIVE
+                                        </span>
+                                    )}
+
+                                    {user?.role === 'admin' && (
+                                        <span
+                                            className="inline-flex items-center gap-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setIsEditFeederModalOpen(true);
+                                                }}
+                                                className="p-1 rounded text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                title="Edit Feeder"
+                                            >
+                                                <Pencil size={13} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteFeeder();
+                                                }}
+                                                className="p-1 rounded text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
+                                                title="Delete Feeder"
+                                            >
+                                                <Trash2 size={13} />
+                                            </button>
+                                        </span>
+                                    )}
+                                </h3>
+
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Total:{' '}
+                                    <span className="font-semibold text-red-600 tabular-nums">{totalDuration}m</span>
+                                    {' · '}Events:{' '}
+                                    <span className="font-semibold tabular-nums">{eventCount}</span>
+                                    {liveRecordData && (
+                                        <span className="ml-1.5 text-red-600 text-[11px]">· {liveDuration}m ago</span>
+                                    )}
+                                </p>
+                            </div>
+
+                            {/* Right: Actions (Details always top-right on mobile) */}
+                            <div
+                                className="flex items-center gap-1.5 flex-shrink-0"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {/* Mobile Details button - top right */}
+                                <Link
+                                    href={`/feeder/${feeder.id}`}
+                                    className={`sm:hidden inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${isEven
+                                            ? 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                                            : 'border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100'
+                                        }`}
+                                >
+                                    Details
+                                    <ChevronRight size={13} />
+                                </Link>
+
+                                {canAdd && !liveRecordData && (
+                                    <>
+                                        <button
+                                            onClick={() => setIsAddModalOpen(true)}
+                                            className="inline-flex items-center gap-1 text-xs font-medium bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors"
+                                        >
+                                            <Plus size={13} />
+                                            Add
+                                        </button>
+                                        <button
+                                            onClick={() => setIsLiveModalOpen(true)}
+                                            className="inline-flex items-center gap-1.5 bg-red-600 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                                        >
+                                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                            Live
+                                        </button>
+                                    </>
                                 )}
 
-                                {user?.role === 'admin' && (
-                                    <span
-                                        className="inline-flex items-center gap-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                {canAdd && liveRecordData && (
+                                    <button
+                                        onClick={() => openWithdrawModal(liveRecordData)}
+                                        className="inline-flex items-center gap-1.5 bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium hover:bg-amber-600 transition-colors"
+                                    >
+                                        <Square size={12} />
+                                        Withdraw
+                                    </button>
+                                )}
+
+                                {/* Desktop details icon */}
+                                <Link
+                                    href={`/feeder/${feeder.id}`}
+                                    className="hidden sm:inline-flex items-center justify-center p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+                                    title="View details"
+                                >
+                                    <ClipboardList size={14} />
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="mt-3.5">
+                            <div className="flex justify-between text-[10px] text-gray-500 mb-1.5">
+                                <span>Loadshed</span>
+                                <span className={`tabular-nums ${liveRecordData ? 'text-red-600 font-medium' : ''}`}>
+                                    {totalDuration}m{liveRecordData && ' ↑'}
+                                </span>
+                            </div>
+                            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${percentage}%` }}
+                                    transition={{ duration: liveRecordData ? 0.3 : 0.8 }}
+                                    className={`h-full rounded-full ${getBarColor()} ${liveRecordData ? 'animate-pulse' : ''}`}
+                                    style={liveRecordData ? { boxShadow: '0 0 8px rgba(239,68,68,0.45)' } : {}}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Events list */}
+                        {records.length > 0 && (
+                            <div className="mt-3 space-y-1.5">
+                                {records.map((rec, idx) => (
+                                    <div
+                                        key={rec.id}
+                                        className={`text-xs bg-gray-50/80 px-2.5 py-1.5 rounded-lg flex justify-between items-center group/item ${rec.isLive ? 'border-l-[3px] border-red-500 bg-red-50/40' : ''
+                                            }`}
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); setIsEditFeederModalOpen(true); }}
-                                            className="p-1 rounded text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                                            title="Edit Feeder"
-                                        >
-                                            <Pencil size={13} />
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteFeeder(); }}
-                                            className="p-1 rounded text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
-                                            title="Delete Feeder"
-                                        >
-                                            <Trash2 size={13} />
-                                        </button>
-                                    </span>
-                                )}
-                            </h3>
-
-                            <p className="text-xs text-gray-500 mt-1">
-                                Total:{' '}
-                                <span className="font-semibold text-red-600 tabular-nums">{totalDuration}m</span>
-                                {' · '}Events:{' '}
-                                <span className="font-semibold tabular-nums">{eventCount}</span>
-                                {liveRecordData && (
-                                    <span className="ml-1.5 text-red-600 text-[11px]">
-                                        · {liveDuration}m ago
-                                    </span>
-                                )}
-                            </p>
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                            {canAdd && !liveRecordData && (
-                                <>
-                                    <button
-                                        onClick={() => setIsAddModalOpen(true)}
-                                        className="inline-flex items-center gap-1 text-xs font-medium bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors"
-                                    >
-                                        <Plus size={13} />
-                                        Add
-                                    </button>
-                                    <button
-                                        onClick={() => setIsLiveModalOpen(true)}
-                                        className="inline-flex items-center gap-1.5 bg-red-600 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium hover:bg-red-700 transition-colors"
-                                    >
-                                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                        Live
-                                    </button>
-                                </>
-                            )}
-                            {canAdd && liveRecordData && (
-                                <button
-                                    onClick={() => openWithdrawModal(liveRecordData)}
-                                    className="inline-flex items-center gap-1.5 bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium hover:bg-amber-600 transition-colors"
-                                >
-                                    <Square size={12} />
-                                    Withdraw
-                                </button>
-                            )}
-                            <Link
-                                href={`/feeder/${feeder.id}`}
-                                className="inline-flex items-center justify-center p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
-                                onClick={(e) => e.stopPropagation()}
-                                title="View details"
-                            >
-                                <ClipboardList size={14} />
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="mt-3.5">
-                        <div className="flex justify-between text-[10px] text-gray-500 mb-1.5">
-                            <span>Loadshed</span>
-                            <span className={`tabular-nums ${liveRecordData ? 'text-red-600 font-medium' : ''}`}>
-                                {totalDuration}m{liveRecordData && ' ↑'}
-                            </span>
-                        </div>
-                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${percentage}%` }}
-                                transition={{ duration: liveRecordData ? 0.3 : 0.8 }}
-                                className={`h-full rounded-full ${getBarColor()} ${liveRecordData ? 'animate-pulse' : ''}`}
-                                style={liveRecordData ? { boxShadow: '0 0 8px rgba(239,68,68,0.45)' } : {}}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Events list */}
-                    {records.length > 0 && (
-                        <div className="mt-3 space-y-1.5">
-                            {records.map((rec, idx) => (
-                                <div
-                                    key={rec.id}
-                                    className={`text-xs bg-gray-50/80 px-2.5 py-1.5 rounded-lg flex justify-between items-center group/item ${rec.isLive ? 'border-l-[3px] border-red-500 bg-red-50/40' : ''
-                                        }`}
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <span className="truncate flex items-center gap-1.5">
-                                        {rec.isLive ? (
-                                            <Radio size={12} className="text-red-500 shrink-0" />
-                                        ) : (
-                                            <span className="text-gray-400 font-medium">#{idx + 1}</span>
-                                        )}
-                                        {formatEventDateTime(rec.startTime)} →{' '}
-                                        {rec.isLive ? `LIVE (${liveDuration}m)` : formatEventDateTime(rec.endTime)}
-                                    </span>
-
-                                    <div className="flex items-center gap-2">
-                                        <span className={`font-semibold tabular-nums ${rec.isLive ? 'text-red-600 animate-pulse' : 'text-red-600'}`}>
-                                            {rec.isLive ? `${liveDuration}m` : `${rec.duration}m`}
+                                        <span className="truncate flex items-center gap-1.5">
+                                            {rec.isLive ? (
+                                                <Radio size={12} className="text-red-500 shrink-0" />
+                                            ) : (
+                                                <span className="text-gray-400 font-medium">#{idx + 1}</span>
+                                            )}
+                                            {formatEventDateTime(rec.startTime)} →{' '}
+                                            {rec.isLive ? `LIVE (${liveDuration}m)` : formatEventDateTime(rec.endTime)}
                                         </span>
 
-                                        {canEdit && !rec.isLive && (
-                                            <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => openEditModal(rec)}
-                                                    className="p-1 rounded text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <Pencil size={12} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(rec.id)}
-                                                    className="p-1 rounded text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 size={12} />
-                                                </button>
-                                            </div>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            <span
+                                                className={`font-semibold tabular-nums ${rec.isLive ? 'text-red-600 animate-pulse' : 'text-red-600'
+                                                    }`}
+                                            >
+                                                {rec.isLive ? `${liveDuration}m` : `${rec.duration}m`}
+                                            </span>
+
+                                            {canEdit && !rec.isLive && (
+                                                <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => openEditModal(rec)}
+                                                        className="p-1 rounded text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                        title="Edit"
+                                                    >
+                                                        <Pencil size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(rec.id)}
+                                                        className="p-1 rounded text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </motion.div>
 
+            {/* Modals */}
             <AddLoadshedModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
