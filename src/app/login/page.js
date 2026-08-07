@@ -10,8 +10,6 @@ import {
     Eye,
     EyeOff,
     AlertTriangle,
-    Shield,
-    UserCog
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -69,32 +67,32 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-emerald-50/40 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 px-4">
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45 }}
-                className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 max-w-md w-full"
+                transition={{ duration: 0.4 }}
+                className="bg-white rounded-2xl shadow-lg border border-gray-100/80 p-8 sm:p-10 max-w-md w-full"
             >
-                {/* Logo / Header */}
+                {/* Header */}
                 <div className="text-center mb-8">
-                    <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 mx-auto mb-4">
-                        <Zap size={28} strokeWidth={2} />
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20 mb-5">
+                        <Zap size={26} strokeWidth={2.2} />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
                         LoadShed Monitor
                     </h1>
-                    <p className="text-gray-500 mt-1.5 text-sm">
-                        Sign in to your account
+                    <p className="text-gray-500 mt-2 text-sm">
+                        Sign in to continue to your dashboard
                     </p>
                 </div>
 
                 {/* Error */}
                 {error && (
                     <motion.div
-                        initial={{ opacity: 0, y: -8 }}
+                        initial={{ opacity: 0, y: -6 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-red-50 text-red-600 p-3.5 rounded-xl mb-5 text-sm border border-red-100 flex items-start gap-2.5"
+                        className="bg-red-50 text-red-600 p-3.5 rounded-xl mb-6 text-sm border border-red-100 flex items-start gap-2.5"
                     >
                         <AlertTriangle size={16} className="mt-0.5 shrink-0" />
                         <span>{error}</span>
@@ -115,15 +113,12 @@ export default function LoginPage() {
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition text-sm"
+                                className="w-full pl-10 pr-3.5 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition text-sm bg-gray-50/50 focus:bg-white"
                                 placeholder="Enter your username"
                                 autoComplete="username"
                                 required
                             />
                         </div>
-                        <p className="text-xs text-gray-400 mt-1.5">
-                            Use your username (e.g., admin, karim, johndoe)
-                        </p>
                     </div>
 
                     <div>
@@ -138,7 +133,7 @@ export default function LoginPage() {
                                 type={showPassword ? 'text' : 'password'}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-10 pr-11 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition text-sm"
+                                className="w-full pl-10 pr-11 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition text-sm bg-gray-50/50 focus:bg-white"
                                 placeholder="Enter your password"
                                 autoComplete="current-password"
                                 required
@@ -156,7 +151,7 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-medium hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
+                        className="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-medium hover:bg-emerald-700 active:bg-emerald-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm shadow-emerald-600/20 mt-2"
                     >
                         {isLoading ? (
                             <>
@@ -188,36 +183,10 @@ export default function LoginPage() {
                     </button>
                 </form>
 
-                {/* Demo Credentials */}
-                <div className="mt-7">
-                    <p className="text-xs font-medium text-gray-400 text-center mb-2.5">
-                        Demo Credentials
-                    </p>
-                    <div className="space-y-2 text-sm">
-                        <div className="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border border-gray-100">
-                            <span className="flex items-center gap-2">
-                                <Shield size={14} className="text-purple-500" />
-                                <span className="font-medium text-gray-700">Admin</span>
-                            </span>
-                            <span className="text-xs text-gray-500 font-mono">
-                                admin / admin123
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center p-2.5 bg-gray-50 rounded-xl border border-gray-100">
-                            <span className="flex items-center gap-2">
-                                <UserCog size={14} className="text-blue-500" />
-                                <span className="font-medium text-gray-700">SBA</span>
-                            </span>
-                            <span className="text-xs text-gray-500 font-mono">
-                                karim / admin123
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-7 text-center">
+                {/* Footer */}
+                <div className="mt-8 pt-6 border-t border-gray-100 text-center">
                     <p className="text-xs text-gray-400">
-                        © {new Date().getFullYear()} LoadShed Monitor. All rights reserved.
+                        © {new Date().getFullYear()} LoadShed Monitor
                     </p>
                 </div>
             </motion.div>
