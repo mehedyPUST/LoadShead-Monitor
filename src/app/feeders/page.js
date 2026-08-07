@@ -14,7 +14,9 @@ import {
     Inbox,
     RefreshCw,
     AlertTriangle,
-    Radio
+    Radio,
+    ChevronRight,
+    Clock
 } from 'lucide-react';
 import Layout from '@/components/common/Layout';
 import FilterBar from '@/components/substation/FilterBar';
@@ -34,32 +36,38 @@ const formatDateTime = (date) => {
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 };
 
-const formatDuration = (mins) =>
-    mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h${mins % 60}m`;
+const formatDuration = (mins) => {
+    if (mins === 0) return '0 min';
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (m === 0) return `${mins} min`;
+    return `${mins} min (${h}h ${m}m)`;
+};
 
-/* ---------- Skeleton ---------- */
+// ---------- Skeleton ----------
 const FeedersSkeleton = () => (
-    <div className="space-y-5 mt-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+    <div className="space-y-6 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
             {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="rounded-xl border border-gray-100 p-3 border-l-4 border-l-gray-200">
-                    <Skeleton width={70} height={12} className="mb-2" />
-                    <Skeleton width={40} height={20} />
+                <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
+                    <Skeleton width={60} height={12} className="mb-2" />
+                    <Skeleton width={40} height={24} />
                 </div>
             ))}
         </div>
         {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-xl border border-gray-100 overflow-hidden">
-                <div className="px-4 py-3 border-b bg-gray-50 flex justify-between items-center">
+            <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                     <Skeleton width={160} height={16} />
-                    <Skeleton width={90} height={14} />
+                    <Skeleton width={100} height={14} />
                 </div>
                 <div>
                     {[1, 2, 3].map((j) => (
-                        <div key={j} className="px-4 py-3.5 border-b border-gray-50">
+                        <div key={j} className="px-5 py-4 border-b border-gray-50">
                             <div className="flex justify-between mb-2">
                                 <Skeleton width={140} height={16} />
-                                <Skeleton width={60} height={14} />
+                                <Skeleton width={80} height={14} />
                             </div>
                             <Skeleton height={20} className="rounded-md" />
                         </div>
@@ -70,7 +78,7 @@ const FeedersSkeleton = () => (
     </div>
 );
 
-/* ---------- Empty State ---------- */
+// ---------- Empty State ----------
 const EmptyState = ({ filter, onRetry }) => {
     const isFiltered = filter !== 'today' && filter !== 'live';
 
@@ -78,21 +86,21 @@ const EmptyState = ({ filter, onRetry }) => {
         <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center my-6"
+            className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center my-8"
         >
-            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-gray-50 text-gray-400 mx-auto mb-4">
-                <Inbox size={26} />
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 text-gray-300 mx-auto mb-4">
+                <Inbox size={30} />
             </div>
-            <h3 className="text-base font-semibold text-gray-700 mb-1">
+            <h3 className="text-lg font-semibold text-gray-700 mb-1">
                 {isFiltered ? 'No feeders match this filter' : 'No feeders found'}
             </h3>
-            <p className="text-sm text-gray-500 max-w-xs mx-auto mb-5">
+            <p className="text-sm text-gray-500 max-w-sm mx-auto mb-6">
                 {isFiltered
-                    ? 'Try selecting a different date range or switch back to “Today”.'
+                    ? 'Try selecting a different date range or switch back to "Today".'
                     : 'There are currently no feeder records available.'}
             </p>
             {isFiltered && (
-                <button onClick={onRetry} className="btn-primary text-sm px-4 py-2">
+                <button onClick={onRetry} className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
                     Reset filter
                 </button>
             )}
@@ -262,40 +270,38 @@ export default function AllFeedersPage() {
                 transition={{ duration: 0.3 }}
             >
                 {/* Header */}
-                <div className="mb-5 flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
-                                <Zap size={18} />
-                            </div>
-                            <h1 className="text-xl font-bold text-gray-900 tracking-tight truncate">
-                                All Feeders
-                            </h1>
-                            {stats.liveSS > 0 && (
-                                <motion.span
-                                    animate={{ opacity: [1, 0.55, 1] }}
-                                    transition={{ duration: 1.5, repeat: Infinity }}
-                                    className="inline-flex items-center gap-1.5 text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-medium border border-red-100 shrink-0"
-                                >
-                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                    {stats.liveSS} live
-                                </motion.span>
-                            )}
+                <div className="mb-6">
+                    <div className="flex items-center gap-3 mb-1">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700">
+                            <Zap size={20} />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 ml-11 truncate">
-                            {stats.totalSS} substations · {stats.totalFeeders} feeders · {stats.active} active
-                        </p>
+                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+                            All Feeders
+                        </h1>
+                        {stats.liveSS > 0 && (
+                            <motion.span
+                                animate={{ opacity: [1, 0.5, 1] }}
+                                transition={{ duration: 1.5, repeat: Infinity }}
+                                className="inline-flex items-center gap-1.5 text-xs bg-red-50 text-red-600 px-3 py-1 rounded-full font-semibold border border-red-200"
+                            >
+                                <span className="w-2 h-2 rounded-full bg-red-500" />
+                                {stats.liveSS} live
+                            </motion.span>
+                        )}
                     </div>
+                    <p className="text-sm text-gray-500 ml-13">
+                        {stats.totalSS} substations · {stats.totalFeeders} feeders · {stats.active} active
+                    </p>
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-6">
                     {[
-                        { label: 'Substations', value: stats.totalSS, icon: Building2, color: 'border-blue-500 bg-blue-50/50', iconBg: 'bg-blue-100 text-blue-600' },
-                        { label: 'Feeders', value: stats.totalFeeders, icon: Zap, color: 'border-purple-500 bg-purple-50/50', iconBg: 'bg-purple-100 text-purple-600' },
-                        { label: 'Active', value: stats.active, icon: Radio, color: 'border-red-500 bg-red-50/50', iconBg: 'bg-red-100 text-red-600' },
-                        { label: 'Events', value: stats.events, icon: ClipboardList, color: 'border-amber-500 bg-amber-50/50', iconBg: 'bg-amber-100 text-amber-600' },
-                        { label: 'Affected SS', value: stats.affectedSS, icon: MapPin, color: 'border-orange-500 bg-orange-50/50', iconBg: 'bg-orange-100 text-orange-600' },
+                        { label: 'Substations', value: stats.totalSS, icon: Building2 },
+                        { label: 'Feeders', value: stats.totalFeeders, icon: Zap },
+                        { label: 'Active', value: stats.active, icon: Radio },
+                        { label: 'Events', value: stats.events, icon: ClipboardList },
+                        { label: 'Affected SS', value: stats.affectedSS, icon: MapPin },
                     ].map((c, i) => {
                         const Icon = c.icon;
                         return (
@@ -304,14 +310,18 @@ export default function AllFeedersPage() {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.2, delay: i * 0.03 }}
-                                className={`rounded-xl border border-gray-100 border-l-4 ${c.color} p-3 flex items-center gap-2.5 shadow-sm`}
+                                className="bg-white rounded-xl border border-gray-200 px-4 py-3.5 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow"
                             >
-                                <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${c.iconBg} shrink-0`}>
-                                    <Icon size={15} />
+                                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-50 text-gray-500">
+                                    <Icon size={17} />
                                 </div>
-                                <div className="min-w-0">
-                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider truncate">{c.label}</p>
-                                    <p className="text-base font-bold text-gray-900 tabular-nums">{c.value}</p>
+                                <div>
+                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">
+                                        {c.label}
+                                    </p>
+                                    <p className="text-lg font-bold text-gray-900 tabular-nums">
+                                        {c.value}
+                                    </p>
                                 </div>
                             </motion.div>
                         );
@@ -330,18 +340,16 @@ export default function AllFeedersPage() {
                     <motion.div
                         initial={{ opacity: 0, scale: 0.96 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center my-4"
+                        className="bg-white rounded-xl border border-gray-200 shadow-sm p-10 text-center my-6"
                     >
-                        <div className="flex items-center justify-center gap-2 text-red-500 mb-3 text-sm">
-                            <AlertTriangle size={16} />
-                            {error}
-                        </div>
+                        <AlertTriangle size={20} className="text-red-500 mx-auto mb-3" />
+                        <p className="text-sm text-red-600 mb-4">{error}</p>
                         <button
                             onClick={() => {
                                 setError(null);
                                 fetchData(filter, dateRange);
                             }}
-                            className="inline-flex items-center gap-1.5 btn-primary text-sm"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors"
                         >
                             <RefreshCw size={14} />
                             Retry
@@ -357,49 +365,45 @@ export default function AllFeedersPage() {
                 )}
 
                 {!isLoading && !error && feeders.length > 0 && (
-                    <div className="space-y-4 mt-4">
+                    <div className="space-y-5 mt-5">
                         {Object.entries(grouped).map(([ssName, group], gi) => (
                             <motion.div
                                 key={ssName}
                                 initial={{ opacity: 0, y: 12 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.25, delay: gi * 0.04 }}
-                                className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
+                                className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                             >
                                 {/* Substation Header */}
-                                <div
-                                    className={`px-3 sm:px-4 py-2.5 border-b flex justify-between items-center gap-2 ${group.hasLive
-                                        ? 'bg-gradient-to-r from-red-50 to-red-50/40 border-red-100'
-                                        : 'bg-gradient-to-r from-gray-50 to-white border-gray-100'
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <Building2 size={15} className="text-gray-400 shrink-0" />
-                                        <span className="font-semibold text-gray-800 text-sm truncate">{ssName}</span>
+                                <div className="px-4 sm:px-5 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                    <div className="flex items-center gap-2.5">
+                                        <Building2 size={16} className="text-gray-400" />
+                                        <span className="font-semibold text-gray-800 text-sm">
+                                            {ssName}
+                                        </span>
                                         {group.hasLive && (
-                                            <motion.span
-                                                animate={{ opacity: [1, 0.55, 1] }}
-                                                transition={{ duration: 1.5, repeat: Infinity }}
-                                                className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium shrink-0"
-                                            >
+                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                                                 LIVE
-                                            </motion.span>
+                                            </span>
                                         )}
-                                        <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full shrink-0 hidden xs:inline">
+                                        <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
                                             {group.feeders.length} feeders
                                         </span>
                                     </div>
-                                    <div className="text-[10px] text-gray-500 shrink-0 text-right">
+                                    <div className="text-[10px] text-gray-500">
                                         <span className="hidden sm:inline">{group.affected} affected · </span>
-                                        <span>{group.totalEvents} events</span>
+                                        {group.totalEvents} events
                                     </div>
                                 </div>
 
-                                {/* Feeder rows */}
-                                <div className="divide-y divide-gray-50">
+                                {/* ✅ Feeder rows – CLEARLY DIFFERENTIATED */}
+                                <div className="divide-y divide-gray-200">
                                     {group.feeders.map((feeder, fi) => {
                                         const hasLive = feeder.events.some((e) => e.isLive);
                                         const maxDur = Math.max(...feeder.events.map((e) => e.duration || 0), 1);
+                                        // Alternating background for better differentiation
+                                        const isAlternate = fi % 2 === 0;
 
                                         return (
                                             <motion.div
@@ -407,106 +411,113 @@ export default function AllFeedersPage() {
                                                 initial={{ opacity: 0, x: -4 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ duration: 0.2, delay: gi * 0.04 + fi * 0.02 }}
-                                                className={`px-3 sm:px-4 py-3.5 active:bg-gray-100/80 hover:bg-gray-50/70 cursor-pointer transition-colors ${hasLive ? 'bg-red-50/25' : ''
+                                                className={`px-4 sm:px-5 py-3.5 cursor-pointer transition-colors ${hasLive
+                                                        ? 'bg-red-50/30 hover:bg-red-50/60'
+                                                        : isAlternate
+                                                            ? 'bg-white hover:bg-gray-50'
+                                                            : 'bg-gray-50/30 hover:bg-gray-50/70'
                                                     }`}
                                                 onClick={() => router.push(`/feeder/${feeder.feederId}`)}
                                             >
-                                                <div className="flex justify-between items-center gap-2 mb-2">
-                                                    <h4 className="text-sm font-medium text-gray-800 flex items-center gap-1.5 min-w-0">
-                                                        <Zap size={14} className="text-emerald-600 shrink-0" />
-                                                        <span className="truncate">{feeder.feederName}</span>
-                                                        {hasLive && (
-                                                            <span className="text-red-500 text-[10px] animate-pulse font-bold shrink-0">
-                                                                LIVE
+                                                {/* Left border accent for live feeders */}
+                                                <div className={`${hasLive ? 'border-l-4 border-red-400 pl-3' : 'pl-0'} -ml-0.5`}>
+                                                    <div className="flex justify-between items-center gap-3 mb-2">
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            <Zap size={14} className={`shrink-0 ${hasLive ? 'text-red-500' : 'text-gray-400'}`} />
+                                                            <span className={`text-sm font-medium truncate ${hasLive ? 'text-gray-900' : 'text-gray-700'}`}>
+                                                                {feeder.feederName}
                                                             </span>
-                                                        )}
-                                                    </h4>
-                                                    <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded-full text-gray-600 font-medium shrink-0 tabular-nums">
-                                                        {feeder.eventCount}
-                                                    </span>
-                                                </div>
-
-                                                {/* Duration bar */}
-                                                {feeder.totalDuration > 0 ? (
-                                                    <div
-                                                        className="relative w-full h-5 bg-gray-100/80 rounded-md overflow-hidden shadow-inner"
-                                                        title={`${feeder.eventCount} event${feeder.eventCount !== 1 ? 's' : ''} · Total ${formatDuration(feeder.totalDuration)}`}
-                                                    >
-                                                        {feeder.events.map((ev, ei) => {
-                                                            const w = (ev.duration / maxDur) * 100;
-                                                            const l = feeder.events
-                                                                .slice(0, ei)
-                                                                .reduce((s, e) => s + (e.duration / maxDur) * 100, 0);
-
-                                                            const tooltip = ev.isLive
-                                                                ? `LIVE · ${formatDuration(ev.duration)}`
-                                                                : `${formatDateTime(ev.start)} → ${formatDateTime(ev.end)} · ${formatDuration(ev.duration)}`;
-
-                                                            return (
-                                                                <motion.div
-                                                                    key={ev.id}
-                                                                    initial={{ width: 0 }}
-                                                                    animate={{ width: `${Math.max(w, 0.8)}%` }}
-                                                                    transition={{ duration: 0.35, delay: ei * 0.04 }}
-                                                                    className={`absolute top-0 h-full ${ev.isLive ? 'animate-pulse' : ''}`}
-                                                                    style={{
-                                                                        left: `${l}%`,
-                                                                        backgroundColor: ev.isLive ? '#EF4444' : colors[ei % colors.length],
-                                                                        minWidth: '4px',
-                                                                        boxShadow: ev.isLive
-                                                                            ? '0 0 12px rgba(239,68,68,0.35)'
-                                                                            : 'none',
-                                                                    }}
-                                                                    title={tooltip}
-                                                                />
-                                                            );
-                                                        })}
-                                                    </div>
-                                                ) : (
-                                                    <div className="w-full h-5 bg-gray-50 rounded-md flex items-center justify-center text-[10px] text-gray-400 border border-gray-100">
-                                                        No events
-                                                    </div>
-                                                )}
-
-                                                {/* Event chips */}
-                                                {feeder.events.length > 0 && (
-                                                    <div className="mt-2 flex flex-wrap gap-1.5">
-                                                        {feeder.events.slice(0, 3).map((ev, ei) => {
-                                                            const label = ev.isLive
-                                                                ? `LIVE ${formatDuration(ev.duration)}`
-                                                                : `${formatDateTime(ev.start)} ${formatDuration(ev.duration)}`;
-                                                            const tooltip = ev.isLive
-                                                                ? `Ongoing · ${formatDuration(ev.duration)}`
-                                                                : `${formatDateTime(ev.start)} → ${formatDateTime(ev.end)} (${formatDuration(ev.duration)})`;
-
-                                                            return (
-                                                                <span
-                                                                    key={ev.id}
-                                                                    title={tooltip}
-                                                                    className={`text-[9px] px-2 py-0.5 rounded-full font-medium truncate max-w-[140px] ${ev.isLive
-                                                                        ? 'bg-red-100 text-red-600 border border-red-200'
-                                                                        : 'bg-gray-100 text-gray-600'
-                                                                        }`}
-                                                                    style={
-                                                                        !ev.isLive
-                                                                            ? { borderLeft: `2.5px solid ${colors[ei % colors.length]}` }
-                                                                            : {}
-                                                                    }
-                                                                >
-                                                                    {label}
+                                                            {hasLive && (
+                                                                <span className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full animate-pulse shrink-0">
+                                                                    LIVE
                                                                 </span>
-                                                            );
-                                                        })}
-                                                        {feeder.events.length > 3 && (
-                                                            <span
-                                                                className="text-[9px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full"
-                                                                title={`${feeder.events.length - 3} more events`}
-                                                            >
-                                                                +{feeder.events.length - 3}
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-3 shrink-0">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Clock size={12} className="text-gray-400" />
+                                                                <span className={`text-sm font-semibold tabular-nums ${hasLive ? 'text-red-600' : 'text-gray-700'}`}>
+                                                                    {formatDuration(feeder.totalDuration)}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-[10px] bg-gray-200 px-2 py-0.5 rounded-full text-gray-600 font-medium tabular-nums">
+                                                                {feeder.eventCount}
                                                             </span>
-                                                        )}
+                                                            <ChevronRight size={14} className="text-gray-300" />
+                                                        </div>
                                                     </div>
-                                                )}
+
+                                                    {/* Duration bar */}
+                                                    {feeder.totalDuration > 0 ? (
+                                                        <div
+                                                            className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden"
+                                                            title={`${feeder.eventCount} events · Total ${formatDuration(feeder.totalDuration)}`}
+                                                        >
+                                                            {feeder.events.map((ev, ei) => {
+                                                                const w = (ev.duration / maxDur) * 100;
+                                                                const l = feeder.events
+                                                                    .slice(0, ei)
+                                                                    .reduce((s, e) => s + (e.duration / maxDur) * 100, 0);
+
+                                                                return (
+                                                                    <motion.div
+                                                                        key={ev.id}
+                                                                        initial={{ width: 0 }}
+                                                                        animate={{ width: `${Math.max(w, 0.5)}%` }}
+                                                                        transition={{ duration: 0.4, delay: ei * 0.03 }}
+                                                                        className={`absolute top-0 h-full rounded-full ${ev.isLive ? 'animate-pulse' : ''
+                                                                            }`}
+                                                                        style={{
+                                                                            left: `${l}%`,
+                                                                            backgroundColor: ev.isLive
+                                                                                ? '#EF4444'
+                                                                                : colors[ei % colors.length],
+                                                                            minWidth: '3px',
+                                                                        }}
+                                                                        title={`${ev.isLive ? 'LIVE' : formatDateTime(ev.start)} · ${formatDuration(ev.duration)}`}
+                                                                    />
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="w-full h-2 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center">
+                                                            <span className="text-[9px] text-gray-400">No events</span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Event chips */}
+                                                    {feeder.events.length > 0 && (
+                                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                                            {feeder.events.slice(0, 3).map((ev, ei) => {
+                                                                const label = ev.isLive
+                                                                    ? `⚡ LIVE ${formatDuration(ev.duration)}`
+                                                                    : `${formatDateTime(ev.start)} ${formatDuration(ev.duration)}`;
+
+                                                                return (
+                                                                    <span
+                                                                        key={ev.id}
+                                                                        className={`text-[9px] px-2 py-0.5 rounded-full font-medium truncate max-w-[130px] ${ev.isLive
+                                                                                ? 'bg-red-100 text-red-600 border border-red-200'
+                                                                                : 'bg-gray-100 text-gray-600'
+                                                                            }`}
+                                                                        style={
+                                                                            !ev.isLive
+                                                                                ? { borderLeft: `2px solid ${colors[ei % colors.length]}` }
+                                                                                : {}
+                                                                        }
+                                                                    >
+                                                                        {label}
+                                                                    </span>
+                                                                );
+                                                            })}
+                                                            {feeder.events.length > 3 && (
+                                                                <span className="text-[9px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full">
+                                                                    +{feeder.events.length - 3}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </motion.div>
                                         );
                                     })}
