@@ -20,10 +20,14 @@ export default function Navbar() {
 
     const getRoleDisplay = (role) => {
         switch (role) {
-            case 'admin': return 'Admin';
-            case 'sba': return 'SBA';
-            case 'viewer': return 'Viewer';
-            default: return role;
+            case 'admin':
+                return 'Admin';
+            case 'sba':
+                return 'SBA';
+            case 'viewer':
+                return 'Viewer';
+            default:
+                return role;
         }
     };
 
@@ -42,14 +46,28 @@ export default function Navbar() {
         <nav className="bg-emerald-700 shadow-lg border-b border-emerald-600/60 sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4">
                 <div className="flex justify-between items-center h-16">
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center gap-3 flex-shrink-0">
+                    {/* Logo + Title */}
+                    <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 min-w-0">
                         <img
                             src="/logo.png"
                             alt="WZPDCL Logo"
-                            className="h-10 w-auto object-contain brightness-110"
-                            onError={(e) => { e.target.style.display = 'none'; }}
+                            className="h-9 w-auto object-contain brightness-110 flex-shrink-0"
+                            onError={(e) => {
+                                e.target.style.display = 'none';
+                            }}
                         />
+
+                        {/* Mobile title */}
+                        <div className="sm:hidden min-w-0">
+                            <span className="text-sm font-bold text-white tracking-tight block leading-tight">
+                                WZPDCL, Kushtia
+                            </span>
+                            <span className="text-[10px] text-emerald-300/90 block leading-tight">
+                                Interruption Report
+                            </span>
+                        </div>
+
+                        {/* Desktop title */}
                         <div className="hidden sm:block">
                             <span className="text-lg font-bold text-white tracking-tight">
                                 West Zone Power Distribution Company Limited
@@ -73,8 +91,8 @@ export default function Navbar() {
                                     <Link
                                         href={link.href}
                                         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${active
-                                            ? 'bg-emerald-800/70 text-emerald-100 shadow-sm'
-                                            : 'text-emerald-100/80 hover:bg-emerald-900/60 hover:text-white'
+                                                ? 'bg-emerald-800/70 text-emerald-100 shadow-sm'
+                                                : 'text-emerald-100/80 hover:bg-emerald-900/60 hover:text-white'
                                             }`}
                                     >
                                         {Icon && <Icon size={18} />}
@@ -85,24 +103,19 @@ export default function Navbar() {
                         })}
                     </div>
 
-                    {/* Right side - User Section with Pipe Separators */}
+                    {/* Right side */}
                     <div className="flex items-center gap-1">
                         {user ? (
                             <>
-                                {/* User name & role */}
                                 <div className="hidden sm:flex items-center gap-2">
-                                    <span className="text-sm font-medium text-emerald-50">
-                                        {user.name}
-                                    </span>
+                                    <span className="text-sm font-medium text-emerald-50">{user.name}</span>
                                     <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-800 text-emerald-200 border border-emerald-700">
                                         {getRoleDisplay(user.role)}
                                     </span>
                                 </div>
 
-                                {/* Separator */}
                                 <span className="text-emerald-400/50 mx-1 select-none hidden sm:block">|</span>
 
-                                {/* Logout */}
                                 <button
                                     onClick={handleLogout}
                                     className="text-sm text-emerald-200/80 hover:text-white hidden sm:block transition-colors"
@@ -111,15 +124,12 @@ export default function Navbar() {
                                 </button>
                             </>
                         ) : (
-                            <>
-                                {/* Login */}
-                                <Link
-                                    href="/login"
-                                    className="text-sm text-emerald-200/80 hover:text-white transition-colors"
-                                >
-                                    Login
-                                </Link>
-                            </>
+                            <Link
+                                href="/login"
+                                className="text-sm text-emerald-200/80 hover:text-white transition-colors"
+                            >
+                                Login
+                            </Link>
                         )}
 
                         {/* Hamburger */}
@@ -143,8 +153,8 @@ export default function Navbar() {
                                     href={link.href}
                                     onClick={() => setMenuOpen(false)}
                                     className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active
-                                        ? 'bg-emerald-800/70 text-emerald-100'
-                                        : 'text-emerald-100/80 hover:bg-emerald-900/50 hover:text-white'
+                                            ? 'bg-emerald-800/70 text-emerald-100'
+                                            : 'text-emerald-100/80 hover:bg-emerald-900/50 hover:text-white'
                                         }`}
                                 >
                                     {link.label}

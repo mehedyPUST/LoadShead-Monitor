@@ -19,9 +19,9 @@ export default function FilterBar({ activeFilter, onFilterChange, filterLabel = 
         { id: 'live', label: 'LIVE', icon: Radio },
         { id: 'today', label: 'Today' },
         { id: 'yesterday', label: 'Yesterday' },
-        { id: 'last7days', label: '7 Days' },
-        { id: 'last15days', label: '15 Days' },
-        { id: 'thisMonth', label: 'Month' },
+        { id: 'last7days', label: 'Last 7 Days' },
+        { id: 'last15days', label: 'Last 15 Days' },
+        { id: 'thisMonth', label: 'This Month' },
     ];
 
     const monthOptions = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -111,10 +111,10 @@ export default function FilterBar({ activeFilter, onFilterChange, filterLabel = 
                             key={filter.id}
                             onClick={() => handleFilterClick(filter.id)}
                             className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${isActive
-                                    ? isLive
-                                        ? 'bg-red-600 text-white shadow-md animate-pulse'
-                                        : 'bg-emerald-600 text-white shadow-md'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                ? isLive
+                                    ? 'bg-red-600 text-white shadow-md animate-pulse'
+                                    : 'bg-emerald-600 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
                         >
                             {Icon && <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
@@ -128,8 +128,8 @@ export default function FilterBar({ activeFilter, onFilterChange, filterLabel = 
                     <button
                         onClick={() => { setShowCustomDate(!showCustomDate); setShowCustomMonth(false); }}
                         className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${activeFilter === 'customDate'
-                                ? 'bg-emerald-600 text-white shadow-md'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            ? 'bg-emerald-600 text-white shadow-md'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                     >
                         <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -177,8 +177,8 @@ export default function FilterBar({ activeFilter, onFilterChange, filterLabel = 
                     <button
                         onClick={() => { setShowCustomMonth(!showCustomMonth); setShowCustomDate(false); }}
                         className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${activeFilter === 'customMonth'
-                                ? 'bg-emerald-600 text-white shadow-md'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            ? 'bg-emerald-600 text-white shadow-md'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                     >
                         <CalendarDays className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
