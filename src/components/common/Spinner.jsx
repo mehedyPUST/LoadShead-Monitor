@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { GridLoader } from 'react-spinners';
 
 const Spinner = ({
-    size,           // Now optional – auto-calculates if not provided
+    size,                    // optional override
     color = "#10B981",
     loading = true,
     message = "Loading..."
@@ -15,20 +15,23 @@ const Spinner = ({
     useEffect(() => {
         setIsClient(true);
 
-        // Calculate size based on screen width
         const updateSize = () => {
-            const width = window.innerWidth;
-            if (width < 640) return 20;       // Mobile
-            if (width < 1024) return 28;      // Tablet
-            return 36;                        // Desktop
+            const w = window.innerWidth;
+            if (w < 640) return 20;      // mobile
+            if (w < 1024) return 28;     // tablet
+            return 36;                   // desktop
         };
 
         setResponsiveSize(updateSize());
+
+        // Recalculate on resize (optional but nice)
+        const handleResize = () => setResponsiveSize(updateSize());
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     if (!loading || !isClient) return null;
 
-    // Use user-provided size or fallback to responsive
     const finalSize = size || responsiveSize;
 
     return (
