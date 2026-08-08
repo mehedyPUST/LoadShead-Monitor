@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Menu, X } from 'lucide-react';
+import { Home, Menu, X, Radio } from 'lucide-react'; // ✅ Added Radio icon
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 
@@ -36,8 +36,10 @@ export default function Navbar() {
         return pathname.startsWith(path);
     };
 
+    // ✅ Added Live link for all users
     const navLinks = [
         { href: '/', label: 'Home', icon: Home },
+        { href: '/live', label: 'Live', icon: Radio },
         { href: '/feeders', label: 'All Feeders' },
         ...(user?.role === 'admin' ? [{ href: '/admin', label: 'Admin Panel' }] : []),
     ];
@@ -91,8 +93,8 @@ export default function Navbar() {
                                     <Link
                                         href={link.href}
                                         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${active
-                                            ? 'bg-emerald-800/70 text-emerald-100 shadow-sm'
-                                            : 'text-emerald-100/80 hover:bg-emerald-900/60 hover:text-white'
+                                                ? 'bg-emerald-800/70 text-emerald-100 shadow-sm'
+                                                : 'text-emerald-100/80 hover:bg-emerald-900/60 hover:text-white'
                                             }`}
                                     >
                                         {Icon && <Icon size={18} />}
@@ -153,8 +155,8 @@ export default function Navbar() {
                                     href={link.href}
                                     onClick={() => setMenuOpen(false)}
                                     className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active
-                                        ? 'bg-emerald-800/70 text-emerald-100'
-                                        : 'text-emerald-100/80 hover:bg-emerald-900/50 hover:text-white'
+                                            ? 'bg-emerald-800/70 text-emerald-100'
+                                            : 'text-emerald-100/80 hover:bg-emerald-900/50 hover:text-white'
                                         }`}
                                 >
                                     {link.label}

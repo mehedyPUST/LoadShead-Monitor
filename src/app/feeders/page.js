@@ -45,6 +45,14 @@ const formatDuration = (mins) => {
     return `${mins} min (${h}h ${m}m)`;
 };
 
+// Compute elapsed minutes for a live event
+const getElapsedMinutes = (event) => {
+    if (!event || !event.isLive || !event.startTime) return 0;
+    const start = new Date(event.startTime);
+    const now = new Date();
+    return Math.round((now - start) / 60000);
+};
+
 // ---------- Skeleton ----------
 const FeedersSkeleton = () => (
     <div className="space-y-6 mt-4">
@@ -213,9 +221,33 @@ export default function AllFeedersPage() {
         };
     }, [feeders, filter, dateRange, fetchData]);
 
+    // ---------- SORTING LOGIC ----------
+    // Compute sorted feeders: live first, sorted by elapsed time descending
+    const sortedFeeders = useMemo(() => {
+        return [...feeders].sort((a, b) => {
+            const aLive = a.events.some(e => e.isLive);
+            const bLive = b.events.some(e => e.isLive);
+
+            // If both live or both not live, sort by elapsed time descending
+            if (aLive && bLive) {
+                const aElapsed = getElapsedMinutes(a.events.find(e => e.isLive));
+                const bElapsed = getElapsedMinutes(b.events.find(e => e.isLive));
+                return bElapsed - aElapsed;
+            }
+
+            // If one is live, it goes first
+            if (aLive && !bLive) return -1;
+            if (!aLive && bLive) return 1;
+
+            // If neither live, sort by total duration descending
+            return (b.totalDuration || 0) - (a.totalDuration || 0);
+        });
+    }, [feeders]);
+
+    // Group sorted feeders by substation name (preserves order)
     const grouped = useMemo(() => {
         const g = {};
-        feeders.forEach((f) => {
+        sortedFeeders.forEach((f) => {
             const k = f.substationName || 'Unknown';
             if (!g[k]) {
                 g[k] = {
@@ -233,12 +265,12 @@ export default function AllFeedersPage() {
             if (f.events.some((e) => e.isLive)) g[k].hasLive = true;
         });
         return g;
-    }, [feeders]);
+    }, [sortedFeeders]);
 
     const stats = useMemo(() => {
-        const totalFeeders = feeders.length;
-        const active = feeders.filter((f) => f.eventCount > 0).length;
-        const events = feeders.reduce((s, f) => s + f.eventCount, 0);
+        const totalFeeders = sortedFeeders.length;
+        const active = sortedFeeders.filter((f) => f.eventCount > 0).length;
+        const events = sortedFeeders.reduce((s, f) => s + f.eventCount, 0);
         const affectedSS = Object.keys(grouped).filter((k) => grouped[k].totalEvents > 0).length;
         const liveSS = Object.keys(grouped).filter((k) => grouped[k].hasLive).length;
 
@@ -250,7 +282,7 @@ export default function AllFeedersPage() {
             liveSS,
             totalSS: Object.keys(grouped).length,
         };
-    }, [feeders, grouped]);
+    }, [sortedFeeders, grouped]);
 
     if (loading || !user) {
         return (
@@ -357,14 +389,14 @@ export default function AllFeedersPage() {
                     </motion.div>
                 )}
 
-                {!isLoading && !error && feeders.length === 0 && (
+                {!isLoading && !error && sortedFeeders.length === 0 && (
                     <EmptyState
                         filter={filter}
                         onRetry={() => handleFilterChange({ type: 'today' })}
                     />
                 )}
 
-                {!isLoading && !error && feeders.length > 0 && (
+                {!isLoading && !error && sortedFeeders.length > 0 && (
                     <div className="space-y-5 mt-5">
                         {Object.entries(grouped).map(([ssName, group], gi) => (
                             <motion.div
@@ -397,13 +429,15 @@ export default function AllFeedersPage() {
                                     </div>
                                 </div>
 
-                                {/* ✅ Feeder rows – CLEARLY DIFFERENTIATED */}
+                                {/* Feeder rows – sorted already */}
                                 <div className="divide-y divide-gray-200">
                                     {group.feeders.map((feeder, fi) => {
                                         const hasLive = feeder.events.some((e) => e.isLive);
                                         const maxDur = Math.max(...feeder.events.map((e) => e.duration || 0), 1);
-                                        // Alternating background for better differentiation
                                         const isAlternate = fi % 2 === 0;
+                                        // Compute elapsed time for live events
+                                        const liveEvent = feeder.events.find(e => e.isLive);
+                                        const elapsedMin = liveEvent ? getElapsedMinutes(liveEvent) : 0;
 
                                         return (
                                             <motion.div
@@ -419,7 +453,6 @@ export default function AllFeedersPage() {
                                                     }`}
                                                 onClick={() => router.push(`/feeder/${feeder.feederId}`)}
                                             >
-                                                {/* Left border accent for live feeders */}
                                                 <div className={`${hasLive ? 'border-l-4 border-red-400 pl-3' : 'pl-0'} -ml-0.5`}>
                                                     <div className="flex justify-between items-center gap-3 mb-2">
                                                         <div className="flex items-center gap-2 min-w-0">
@@ -429,7 +462,7 @@ export default function AllFeedersPage() {
                                                             </span>
                                                             {hasLive && (
                                                                 <span className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full animate-pulse shrink-0">
-                                                                    LIVE
+                                                                    LIVE {elapsedMin}m
                                                                 </span>
                                                             )}
                                                         </div>

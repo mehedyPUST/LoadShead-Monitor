@@ -59,3 +59,32 @@
     @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition bg-gray-50/50 hover:bg-white;
   }
 }
+
+/* ===== Live Ticker Animation ===== */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll linear infinite;
+}
+
+.animation-pause {
+  animation-play-state: paused !important;
+}
+
+/* ===== Scrollbar Hide (for modals, etc.) ===== */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

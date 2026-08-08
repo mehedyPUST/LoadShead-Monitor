@@ -4,10 +4,11 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Building2, Zap, ArrowRight } from 'lucide-react';
+import { Building2, Zap, ArrowRight, Lock } from 'lucide-react';
 import Layout from '@/components/common/Layout';
 import StatsCards from '@/components/dashboard/StatsCards';
 import SubstationCard from '@/components/dashboard/SubstationCard';
+import LiveTicker from '@/components/dashboard/LiveTicker';
 import Spinner from '@/components/common/Spinner';
 import { apiCall } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
@@ -28,11 +29,15 @@ export default function Dashboard() {
   const intervalRef = useRef(null);
   const isVisibleRef = useRef(true);
 
-  useEffect(() => {
-    if (!loading && !user) router.push('/login');
-  }, [loading, user, router]);
+  // ✅ REMOVED login redirect – homepage is now public
 
   const fetchData = useCallback(async () => {
+    // If no user, don't fetch – just show public message
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await apiCall('/records/dashboard-stats?view=today');
 
@@ -59,15 +64,18 @@ export default function Dashboard() {
       setError(error.message);
       if (error.message?.includes('token')) {
         localStorage.removeItem('token');
-        router.push('/login');
+        // Don't redirect – just show error
       }
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [user]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     fetchData();
@@ -96,15 +104,7 @@ export default function Dashboard() {
     };
   }, [user, fetchData]);
 
-  const substationCards = useMemo(
-    () =>
-      substations.map((ss, index) => (
-        <SubstationCard key={ss.id} substation={ss} index={index} />
-      )),
-    [substations]
-  );
-
-  if (loading || !user || isLoading) {
+  if (loading) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
@@ -114,6 +114,49 @@ export default function Dashboard() {
     );
   }
 
+  // Public view when not logged in
+  if (!user) {
+    return (
+      <Layout>
+        <div className="mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700">
+              <Building2 size={22} strokeWidth={2} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+                Substations Overview
+              </h1>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Monitor substations and loadshed activities in real time
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Public message */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 text-gray-300 mx-auto mb-4">
+            <Lock size={30} />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">
+            Sign in to view substation data
+          </h2>
+          <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">
+            Please log in to access real-time loadshed monitoring, feeder details, and live event tracking.
+          </p>
+          <button
+            onClick={() => router.push('/login')}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+          >
+            Sign In
+          </button>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Authenticated view
   if (error) {
     return (
       <Layout>
@@ -127,8 +170,21 @@ export default function Dashboard() {
     );
   }
 
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <Spinner />
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
+      {/* 🔴 Breaking News Ticker - Live Events */}
+      <LiveTicker />
+
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3">
@@ -150,7 +206,9 @@ export default function Dashboard() {
 
       {/* Substation Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-2">
-        {substationCards}
+        {substations.map((ss, index) => (
+          <SubstationCard key={ss.id} substation={ss} index={index} />
+        ))}
 
         {/* View All Feeders Card - matching style */}
         <motion.div

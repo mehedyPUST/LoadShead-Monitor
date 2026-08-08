@@ -13,7 +13,7 @@ export default function RootLayout({ children }) {
       <body className="bg-gray-50 min-h-screen">
         <AuthProvider>
           {children}
-          <Analytics /> {/* ← NEW */}
+          <Analytics />
         </AuthProvider>
       </body>
     </html>
