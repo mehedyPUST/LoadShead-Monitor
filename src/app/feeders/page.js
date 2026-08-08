@@ -222,29 +222,36 @@ export default function AllFeedersPage() {
     }, [feeders, filter, dateRange, fetchData]);
 
     // ---------- SORTING LOGIC ----------
-    // Compute sorted feeders: live first, sorted by elapsed time descending
     const sortedFeeders = useMemo(() => {
         return [...feeders].sort((a, b) => {
             const aLive = a.events.some(e => e.isLive);
             const bLive = b.events.some(e => e.isLive);
 
-            // If both live or both not live, sort by elapsed time descending
             if (aLive && bLive) {
                 const aElapsed = getElapsedMinutes(a.events.find(e => e.isLive));
                 const bElapsed = getElapsedMinutes(b.events.find(e => e.isLive));
                 return bElapsed - aElapsed;
             }
 
-            // If one is live, it goes first
             if (aLive && !bLive) return -1;
             if (!aLive && bLive) return 1;
 
-            // If neither live, sort by total duration descending
             return (b.totalDuration || 0) - (a.totalDuration || 0);
         });
     }, [feeders]);
 
-    // Group sorted feeders by substation name (preserves order)
+    // ---------- GLOBAL MAX DURATION ----------
+    const globalMaxDuration = useMemo(() => {
+        let max = 0;
+        sortedFeeders.forEach((f) => {
+            f.events.forEach((e) => {
+                if ((e.duration || 0) > max) max = e.duration;
+            });
+        });
+        return Math.max(max, 1);
+    }, [sortedFeeders]);
+
+    // Group sorted feeders by substation name
     const grouped = useMemo(() => {
         const g = {};
         sortedFeeders.forEach((f) => {
@@ -429,15 +436,25 @@ export default function AllFeedersPage() {
                                     </div>
                                 </div>
 
-                                {/* Feeder rows – sorted already */}
+                                {/* Feeder rows – SOLID BAR SEGMENTS (no individual rounding) */}
                                 <div className="divide-y divide-gray-200">
                                     {group.feeders.map((feeder, fi) => {
                                         const hasLive = feeder.events.some((e) => e.isLive);
-                                        const maxDur = Math.max(...feeder.events.map((e) => e.duration || 0), 1);
                                         const isAlternate = fi % 2 === 0;
-                                        // Compute elapsed time for live events
                                         const liveEvent = feeder.events.find(e => e.isLive);
                                         const elapsedMin = liveEvent ? getElapsedMinutes(liveEvent) : 0;
+
+                                        const feederTotal = feeder.totalDuration || 0;
+                                        const feederPercent = Math.min((feederTotal / globalMaxDuration) * 100, 100);
+
+                                        // Build segments
+                                        let cumulative = 0;
+                                        const segments = feeder.events.map((ev) => {
+                                            const segWidth = (ev.duration / globalMaxDuration) * 100;
+                                            const left = cumulative;
+                                            cumulative += segWidth;
+                                            return { ...ev, segWidth, left };
+                                        });
 
                                         return (
                                             <motion.div
@@ -445,7 +462,7 @@ export default function AllFeedersPage() {
                                                 initial={{ opacity: 0, x: -4 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ duration: 0.2, delay: gi * 0.04 + fi * 0.02 }}
-                                                className={`px-4 sm:px-5 py-3.5 cursor-pointer transition-colors ${hasLive
+                                                className={`px-5 sm:px-6 py-4 cursor-pointer transition-colors ${hasLive
                                                         ? 'bg-red-50/30 hover:bg-red-50/60'
                                                         : isAlternate
                                                             ? 'bg-white hover:bg-gray-50'
@@ -480,40 +497,33 @@ export default function AllFeedersPage() {
                                                         </div>
                                                     </div>
 
-                                                    {/* Duration bar */}
-                                                    {feeder.totalDuration > 0 ? (
+                                                    {/* ✅ Bar – outer container rounded, segments are flat (no rounding) */}
+                                                    {feederTotal > 0 ? (
                                                         <div
-                                                            className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden"
-                                                            title={`${feeder.eventCount} events · Total ${formatDuration(feeder.totalDuration)}`}
+                                                            className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden"
+                                                            title={`${feeder.eventCount} events · Total ${formatDuration(feederTotal)} (max: ${formatDuration(globalMaxDuration)})`}
                                                         >
-                                                            {feeder.events.map((ev, ei) => {
-                                                                const w = (ev.duration / maxDur) * 100;
-                                                                const l = feeder.events
-                                                                    .slice(0, ei)
-                                                                    .reduce((s, e) => s + (e.duration / maxDur) * 100, 0);
-
-                                                                return (
-                                                                    <motion.div
-                                                                        key={ev.id}
-                                                                        initial={{ width: 0 }}
-                                                                        animate={{ width: `${Math.max(w, 0.5)}%` }}
-                                                                        transition={{ duration: 0.4, delay: ei * 0.03 }}
-                                                                        className={`absolute top-0 h-full rounded-full ${ev.isLive ? 'animate-pulse' : ''
-                                                                            }`}
-                                                                        style={{
-                                                                            left: `${l}%`,
-                                                                            backgroundColor: ev.isLive
-                                                                                ? '#EF4444'
-                                                                                : colors[ei % colors.length],
-                                                                            minWidth: '3px',
-                                                                        }}
-                                                                        title={`${ev.isLive ? 'LIVE' : formatDateTime(ev.start)} · ${formatDuration(ev.duration)}`}
-                                                                    />
-                                                                );
-                                                            })}
+                                                            {segments.map((ev, ei) => (
+                                                                <motion.div
+                                                                    key={ev.id}
+                                                                    initial={{ width: 0 }}
+                                                                    animate={{ width: `${Math.max(ev.segWidth, 0.5)}%` }}
+                                                                    transition={{ duration: 0.4, delay: ei * 0.03 }}
+                                                                    // ✅ NO rounded-* class – segments are rectangular
+                                                                    className="absolute top-0 h-full"
+                                                                    style={{
+                                                                        left: `${Math.max(ev.left, 0)}%`,
+                                                                        backgroundColor: ev.isLive
+                                                                            ? '#EF4444'
+                                                                            : colors[ei % colors.length],
+                                                                        minWidth: '2px',
+                                                                    }}
+                                                                    title={`${ev.isLive ? 'LIVE' : formatDateTime(ev.start)} · ${formatDuration(ev.duration)}`}
+                                                                />
+                                                            ))}
                                                         </div>
                                                     ) : (
-                                                        <div className="w-full h-2 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center">
+                                                        <div className="w-full h-3 bg-gray-100 rounded-full border border-gray-200 flex items-center justify-center">
                                                             <span className="text-[9px] text-gray-400">No events</span>
                                                         </div>
                                                     )}

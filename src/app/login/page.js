@@ -80,7 +80,7 @@ export default function LoginPage() {
                         <Zap size={26} strokeWidth={2.2} />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                        LoadShed Monitor
+                        Interruption Tracker
                     </h1>
                     <p className="text-gray-500 mt-2 text-sm">
                         Sign in to continue to your dashboard
