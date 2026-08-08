@@ -35,8 +35,23 @@ export default function AdminDashboard() {
     const [passwordResetUser, setPasswordResetUser] = useState(null);
     const [newPassword, setNewPassword] = useState('');
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
-    const [formData, setFormData] = useState({ role: '', substationId: '' });
-    const [createForm, setCreateForm] = useState({ name: '', username: '', password: '', confirmPassword: '', role: 'viewer', substationId: '' });
+    const [editFormData, setEditFormData] = useState({
+        name: '',
+        username: '',
+        email: '',
+        role: '',
+        substationId: '',
+        password: '',
+        confirmPassword: '',
+    });
+    const [createForm, setCreateForm] = useState({
+        name: '',
+        username: '',
+        password: '',
+        confirmPassword: '',
+        role: 'viewer',
+        substationId: '',
+    });
     const [message, setMessage] = useState({ type: '', text: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({});
@@ -69,24 +84,56 @@ export default function AdminDashboard() {
         setTimeout(() => setMessage({ type: '', text: '' }), 5000);
     };
 
+    // ===== EDIT USER =====
     const handleEditClick = (user) => {
         setEditingUser(user);
-        setFormData({ role: user.role, substationId: user.substationId || '' });
+        setEditFormData({
+            name: user.name || '',
+            username: user.username || '',
+            email: user.email || '',
+            role: user.role || 'viewer',
+            substationId: user.substationId || '',
+            password: '',
+            confirmPassword: '',
+        });
         setShowEditModal(true);
         setMessage({ type: '', text: '' });
         setFieldErrors({});
     };
 
-    const handleRoleChange = async (e) => {
+    const handleEditSubmit = async (e) => {
         e.preventDefault();
+        setFieldErrors({});
         setIsSubmitting(true);
+
+        // Validate password if provided
+        if (editFormData.password && editFormData.password.length < 6) {
+            setFieldErrors({ password: 'Password must be at least 6 characters' });
+            setIsSubmitting(false);
+            return;
+        }
+        if (editFormData.password && editFormData.password !== editFormData.confirmPassword) {
+            setFieldErrors({ confirmPassword: 'Passwords do not match' });
+            setIsSubmitting(false);
+            return;
+        }
+
+        // Build payload (exclude confirmPassword, empty password)
+        const payload = {
+            name: editFormData.name,
+            username: editFormData.username,
+            email: editFormData.email,
+            role: editFormData.role,
+            substationId: editFormData.role === 'sba' ? editFormData.substationId : null,
+        };
+        if (editFormData.password) {
+            payload.password = editFormData.password;
+        }
+
         try {
-            const response = await api.updateUserRole(editingUser.id, {
-                role: formData.role,
-                substationId: formData.substationId || null,
-            });
+            const response = await api.updateUserRole(editingUser.id, payload);
             if (response.success) {
-                showMessage('success', 'User updated!');
+                showMessage('success', 'User updated successfully');
                 fetchData();
                 setTimeout(() => {
                     setShowEditModal(false);
@@ -94,6 +141,11 @@ export default function AdminDashboard() {
                 }, 1000);
             } else {
                 showMessage('error', response.error || 'Update failed');
+                if (response.error?.includes('username')) {
+                    setFieldErrors({ username: response.error });
+                } else if (response.error?.includes('email')) {
+                    setFieldErrors({ email: response.error });
+                }
             }
         } catch (error) {
             showMessage('error', error.message);
@@ -102,6 +154,7 @@ export default function AdminDashboard() {
         }
     };
 
+    // ===== CREATE USER =====
     const validateCreateForm = () => {
         const errors = {};
         if (!createForm.name.trim()) errors.name = 'Name is required';
@@ -171,6 +224,7 @@ export default function AdminDashboard() {
         }
     };
 
+    // ===== DELETE USER =====
     const handleDeleteUser = async (userId) => {
         if (!confirm('Are you sure you want to delete this user?')) return;
         try {
@@ -186,6 +240,7 @@ export default function AdminDashboard() {
         }
     };
 
+    // ===== RESET PASSWORD (separate modal) =====
     const handleResetPassword = (user) => {
         setPasswordResetUser(user);
         setNewPassword('');
@@ -311,8 +366,8 @@ export default function AdminDashboard() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         className={`p-4 rounded-xl mb-6 flex items-center justify-between border ${message.type === 'success'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-red-50 text-red-700 border-red-200'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-red-50 text-red-700 border-red-200'
                             }`}
                     >
                         <span className="flex items-center gap-2 text-sm font-medium">
@@ -376,7 +431,9 @@ export default function AdminDashboard() {
                             className={`rounded-xl border border-gray-100 border-l-4 ${card.color} p-4 shadow-sm`}
                         >
                             <div className="flex items-center gap-3">
-                                <div className={`flex items-center justify-center w-9 h-9 rounded-lg ${card.iconBg}`}>
+                                <div
+                                    className={`flex items-center justify-center w-9 h-9 rounded-lg ${card.iconBg}`}
+                                >
                                     <Icon size={16} />
                                 </div>
                                 <div>
@@ -441,7 +498,9 @@ export default function AdminDashboard() {
                                         </span>
                                     </td>
                                     <td className="px-5 py-3.5 whitespace-nowrap text-sm text-gray-600">
-                                        {user.role === 'sba' ? getSubstationName(user.substationId) : '—'}
+                                        {user.role === 'sba'
+                                            ? getSubstationName(user.substationId)
+                                            : '—'}
                                     </td>
                                     <td className="px-5 py-3.5 whitespace-nowrap text-sm">
                                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -483,7 +542,7 @@ export default function AdminDashboard() {
                 )}
             </div>
 
-            {/* Create Modal */}
+            {/* ===== CREATE USER MODAL ===== */}
             <AnimatePresence>
                 {showCreateModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -646,7 +705,7 @@ export default function AdminDashboard() {
                 )}
             </AnimatePresence>
 
-            {/* Edit Modal */}
+            {/* ===== EDIT USER MODAL – FULL EDIT ===== */}
             <AnimatePresence>
                 {showEditModal && editingUser && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -654,7 +713,7 @@ export default function AdminDashboard() {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+                            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto"
                         >
                             <div className="flex justify-between items-center mb-5">
                                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -672,15 +731,71 @@ export default function AdminDashboard() {
                                     <X size={20} />
                                 </button>
                             </div>
-                            <form onSubmit={handleRoleChange} className="space-y-4">
+
+                            <form onSubmit={handleEditSubmit} className="space-y-4">
+                                {/* Full Name */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Full Name *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editFormData.name}
+                                        onChange={(e) =>
+                                            setEditFormData({ ...editFormData, name: e.target.value })
+                                        }
+                                        className="input-field"
+                                        required
+                                    />
+                                </div>
+
+                                {/* Username */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Username *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editFormData.username}
+                                        onChange={(e) =>
+                                            setEditFormData({ ...editFormData, username: e.target.value })
+                                        }
+                                        className={`input-field ${fieldErrors.username ? 'border-red-500' : ''}`}
+                                        required
+                                    />
+                                    {fieldErrors.username && (
+                                        <p className="text-xs text-red-500 mt-1">{fieldErrors.username}</p>
+                                    )}
+                                </div>
+
+                                {/* Email */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Email *
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={editFormData.email}
+                                        onChange={(e) =>
+                                            setEditFormData({ ...editFormData, email: e.target.value })
+                                        }
+                                        className={`input-field ${fieldErrors.email ? 'border-red-500' : ''}`}
+                                        required
+                                    />
+                                    {fieldErrors.email && (
+                                        <p className="text-xs text-red-500 mt-1">{fieldErrors.email}</p>
+                                    )}
+                                </div>
+
+                                {/* Role */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Role
                                     </label>
                                     <select
-                                        value={formData.role}
+                                        value={editFormData.role}
                                         onChange={(e) =>
-                                            setFormData({ ...formData, role: e.target.value })
+                                            setEditFormData({ ...editFormData, role: e.target.value })
                                         }
                                         className="input-field"
                                         required
@@ -690,21 +805,24 @@ export default function AdminDashboard() {
                                         <option value="viewer">Viewer</option>
                                     </select>
                                 </div>
-                                {formData.role === 'sba' && (
+
+                                {/* Substation (only if SBA) */}
+                                {editFormData.role === 'sba' && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Substation
+                                            Substation *
                                         </label>
                                         <select
-                                            value={formData.substationId}
+                                            value={editFormData.substationId}
                                             onChange={(e) =>
-                                                setFormData({
-                                                    ...formData,
+                                                setEditFormData({
+                                                    ...editFormData,
                                                     substationId: e.target.value,
                                                 })
                                             }
-                                            className="input-field"
-                                            required={formData.role === 'sba'}
+                                            className={`input-field ${fieldErrors.substationId ? 'border-red-500' : ''
+                                                }`}
+                                            required={editFormData.role === 'sba'}
                                         >
                                             <option value="">Select Substation</option>
                                             {substations.map((ss) => (
@@ -713,20 +831,65 @@ export default function AdminDashboard() {
                                                 </option>
                                             ))}
                                         </select>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            {formData.substationId
-                                                ? `Assigned to: ${getSubstationName(formData.substationId)}`
-                                                : 'Please select a substation'}
-                                        </p>
+                                        {fieldErrors.substationId && (
+                                            <p className="text-xs text-red-500 mt-1">
+                                                {fieldErrors.substationId}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
+
+                                {/* Password (optional) */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        New Password (leave blank to keep current)
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={editFormData.password}
+                                        onChange={(e) =>
+                                            setEditFormData({ ...editFormData, password: e.target.value })
+                                        }
+                                        className={`input-field ${fieldErrors.password ? 'border-red-500' : ''}`}
+                                        placeholder="••••••••"
+                                        minLength={6}
+                                    />
+                                    {fieldErrors.password && (
+                                        <p className="text-xs text-red-500 mt-1">{fieldErrors.password}</p>
+                                    )}
+                                </div>
+
+                                {/* Confirm Password */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Confirm New Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={editFormData.confirmPassword}
+                                        onChange={(e) =>
+                                            setEditFormData({
+                                                ...editFormData,
+                                                confirmPassword: e.target.value,
+                                            })
+                                        }
+                                        className={`input-field ${fieldErrors.confirmPassword ? 'border-red-500' : ''
+                                            }`}
+                                        placeholder="••••••••"
+                                    />
+                                    {fieldErrors.confirmPassword && (
+                                        <p className="text-xs text-red-500 mt-1">
+                                            {fieldErrors.confirmPassword}
+                                        </p>
+                                    )}
+                                </div>
+
                                 <div className="flex gap-3 pt-2">
                                     <button
                                         type="button"
                                         onClick={() => {
                                             setShowEditModal(false);
                                             setEditingUser(null);
-                                            setMessage({ type: '', text: '' });
                                         }}
                                         className="btn-secondary flex-1"
                                     >
@@ -746,7 +909,7 @@ export default function AdminDashboard() {
                 )}
             </AnimatePresence>
 
-            {/* Password Reset Modal */}
+            {/* ===== PASSWORD RESET MODAL (separate) ===== */}
             <AnimatePresence>
                 {showPasswordModal && passwordResetUser && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
