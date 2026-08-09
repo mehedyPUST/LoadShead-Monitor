@@ -29,7 +29,7 @@ const formatNumber = (num) => {
     });
 };
 
-// Metric Edit Modal
+// Metric Edit Modal (unchanged)
 const MetricEditModal = ({ isOpen, onClose, metrics, onSave }) => {
     const [formData, setFormData] = useState({
         allotmentMW: 0,
@@ -183,7 +183,7 @@ const MetricEditModal = ({ isOpen, onClose, metrics, onSave }) => {
     );
 };
 
-const StatsCards = memo(({ stats }) => {
+const StatsCards = memo(({ stats, totalLiveMW = 0 }) => {
     const router = useRouter();
     const { user } = useAuth();
     const [metrics, setMetrics] = useState(null);
@@ -195,12 +195,10 @@ const StatsCards = memo(({ stats }) => {
     const totalFeeders = stats.totalFeeders || 0;
     const liveCount = stats.liveCount || 0;
 
-    // Check if user is Bottail SBA or Admin
     const BOTTAIL_SUBSTATION_ID = process.env.NEXT_PUBLIC_BOTTAIL_SUBSTATION_ID;
     const canEditMetrics = user?.role === 'admin' ||
         (user?.role === 'sba' && user?.substationId === BOTTAIL_SUBSTATION_ID);
 
-    // Fetch metrics
     const fetchMetrics = useCallback(async () => {
         try {
             setIsMetricsLoading(true);
@@ -226,7 +224,16 @@ const StatsCards = memo(({ stats }) => {
         setMetrics(updatedData);
     };
 
-    // Cards: Substations, Feeders, Live Loadshed (clickable), System Metrics
+    // Live Loadshed card value and hint logic
+    const liveDisplayValue = liveCount > 0 && totalLiveMW > 0
+        ? `${formatNumber(totalLiveMW)} MW`
+        : liveCount;
+    const liveHint = liveCount > 0
+        ? (totalLiveMW > 0
+            ? `${liveCount} feeder${liveCount !== 1 ? 's' : ''} currently in loadshed`
+            : `${liveCount} feeder${liveCount !== 1 ? 's' : ''} currently in loadshed`)
+        : 'No active events';
+
     const cards = [
         {
             label: 'Substations',
@@ -248,7 +255,7 @@ const StatsCards = memo(({ stats }) => {
         },
         {
             label: 'Live Loadshed',
-            value: liveCount,
+            value: liveDisplayValue,
             icon: Radio,
             color: liveCount > 0
                 ? 'border-red-500 bg-red-50/60'
@@ -257,14 +264,11 @@ const StatsCards = memo(({ stats }) => {
                 ? 'bg-red-100 text-red-600'
                 : 'bg-emerald-100 text-emerald-600',
             valueColor: liveCount > 0 ? 'text-red-700' : 'text-emerald-700',
-            hint: liveCount > 0
-                ? `${liveCount} feeder${liveCount !== 1 ? 's' : ''} currently in loadshed`
-                : 'No active events',
+            hint: liveHint,
             pulse: liveCount > 0,
             clickable: true,
             href: '/live',
         },
-        // System Metrics – last card
         {
             label: 'System Metrics',
             value: '',
@@ -282,7 +286,6 @@ const StatsCards = memo(({ stats }) => {
             {cards.map((card, index) => {
                 const Icon = card.icon;
 
-                // Render metrics card
                 if (card.isMetrics) {
                     return (
                         <motion.div
@@ -370,7 +373,6 @@ const StatsCards = memo(({ stats }) => {
                                         </p>
                                     )}
 
-                                    {/* Hover overlay – edit */}
                                     {canEditMetrics && (
                                         <div className="absolute inset-0 bg-emerald-900/10 backdrop-blur-[2px] opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-xl">
                                             <div className="flex items-center gap-2 px-4 py-2 bg-white/90 rounded-lg shadow-lg border border-emerald-200 text-emerald-700 text-sm font-medium">
@@ -409,7 +411,7 @@ const StatsCards = memo(({ stats }) => {
                     );
                 }
 
-                // Regular cards (Substations, Feeders, Live Loadshed)
+                // Regular cards
                 const isClickable = card.clickable;
                 return (
                     <motion.div
@@ -453,7 +455,6 @@ const StatsCards = memo(({ stats }) => {
                 );
             })}
 
-            {/* Metrics Edit Modal */}
             <MetricEditModal
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}

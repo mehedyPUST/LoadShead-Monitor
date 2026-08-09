@@ -4,12 +4,13 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Building2, Zap, ArrowRight, Lock } from 'lucide-react';
+import { Building2, Zap, ArrowRight, Lock, Plus } from 'lucide-react';
 import Layout from '@/components/common/Layout';
 import StatsCards from '@/components/dashboard/StatsCards';
 import SubstationCard from '@/components/dashboard/SubstationCard';
 import LiveTicker from '@/components/dashboard/LiveTicker';
 import Spinner from '@/components/common/Spinner';
+import AddSubstationModal from '@/components/modals/AddSubstationModal';
 import { apiCall } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
 
@@ -26,13 +27,12 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [liveEvents, setLiveEvents] = useState(0);
+  const [totalLiveMW, setTotalLiveMW] = useState(0);
+  const [isAddSubstationModalOpen, setIsAddSubstationModalOpen] = useState(false);
   const intervalRef = useRef(null);
   const isVisibleRef = useRef(true);
 
-  // ✅ REMOVED login redirect – homepage is now public
-
   const fetchData = useCallback(async () => {
-    // If no user, don't fetch – just show public message
     if (!user) {
       setIsLoading(false);
       return;
@@ -44,6 +44,7 @@ export default function Dashboard() {
       if (response.success) {
         setSubstations(response.data);
         setLiveEvents(response.liveEvents || 0);
+        setTotalLiveMW(response.totalLiveMW || 0);
 
         const aggregatedStats = response.data.reduce(
           (acc, ss) => ({
@@ -64,7 +65,6 @@ export default function Dashboard() {
       setError(error.message);
       if (error.message?.includes('token')) {
         localStorage.removeItem('token');
-        // Don't redirect – just show error
       }
     } finally {
       setIsLoading(false);
@@ -114,7 +114,7 @@ export default function Dashboard() {
     );
   }
 
-  // Public view when not logged in
+  // Public view
   if (!user) {
     return (
       <Layout>
@@ -134,7 +134,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Public message */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
           <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 text-gray-300 mx-auto mb-4">
             <Lock size={30} />
@@ -156,7 +155,6 @@ export default function Dashboard() {
     );
   }
 
-  // Authenticated view
   if (error) {
     return (
       <Layout>
@@ -182,35 +180,45 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      {/* 🔴 Breaking News Ticker - Live Events */}
       <LiveTicker />
 
-      {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700">
-            <Building2 size={22} strokeWidth={2} />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700">
+              <Building2 size={22} strokeWidth={2} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+                Substations Overview
+              </h1>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Monitor substations and loadshed activities in real time
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-              Substations Overview
-            </h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Monitor substations and loadshed activities in real time
-            </p>
-          </div>
+
+          {/* Admin: Add Substation Button */}
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => setIsAddSubstationModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+            >
+              <Plus size={16} />
+              <span className="hidden sm:inline">Add Substation</span>
+            </button>
+          )}
         </div>
       </div>
 
-      <StatsCards stats={stats} />
+      <StatsCards stats={stats} totalLiveMW={totalLiveMW} />
 
-      {/* Substation Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-2">
         {substations.map((ss, index) => (
           <SubstationCard key={ss.id} substation={ss} index={index} />
         ))}
 
-        {/* View All Feeders Card - matching style */}
+        {/* View All Feeders Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -219,13 +227,8 @@ export default function Dashboard() {
           className="group relative rounded-xl overflow-hidden cursor-pointer"
           onClick={() => router.push('/feeders')}
         >
-          {/* Animated gradient border */}
           <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 opacity-70 group-hover:opacity-100 transition-opacity duration-300" />
-
-          {/* Soft glow */}
           <div className="absolute -inset-[1px] rounded-xl bg-gradient-to-r from-emerald-400/50 via-teal-300/30 to-emerald-500/50 opacity-60 group-hover:opacity-100 blur-[2px] transition-opacity duration-300" />
-
-          {/* Inner content */}
           <div className="relative m-[1.5px] rounded-[10px] bg-gradient-to-br from-emerald-50 to-white border border-emerald-100/50">
             <div className="p-6 flex flex-col items-center justify-center text-center h-full min-h-[148px]">
               <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 mb-3 group-hover:bg-emerald-200 transition-colors">
@@ -248,6 +251,13 @@ export default function Dashboard() {
           </div>
         </motion.div>
       </div>
+
+      {/* Add Substation Modal */}
+      <AddSubstationModal
+        isOpen={isAddSubstationModalOpen}
+        onClose={() => setIsAddSubstationModalOpen(false)}
+        onSuccess={fetchData}
+      />
     </Layout>
   );
 }
